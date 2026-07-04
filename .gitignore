@@ -4,6 +4,9 @@ build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
+.env
+application-local.properties
+AGENT.md
 
 ### STS ###
 .apt_generated
