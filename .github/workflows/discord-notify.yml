@@ -1,0 +1,23 @@
+name: Discord Notify
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, closed, reopened]
+  issues:
+    types: [opened, closed, reopened]
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Discord Notification
+        run: |
+          curl -H "Content-Type: application/json" \
+          -d "{\"content\":\"📢 Có hoạt động mới trên GitHub\nRepository: ${{ github.repository }}\nNgười thực hiện: ${{ github.actor }}\nSự kiện: ${{ github.event_name }}\nNhánh: ${{ github.ref_name }}\"}" \
+          ${{ secrets.DISCORD_WEBHOOK }}
