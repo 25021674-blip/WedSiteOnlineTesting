@@ -2,8 +2,7 @@ name: Discord Notify
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
     types: [opened, closed, reopened]
   issues:
@@ -16,8 +15,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Send Discord Notification
+      - name: Send Discord notification
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          REPOSITORY: ${{ github.repository }}
+          ACTOR: ${{ github.actor }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          curl -H "Content-Type: application/json" \
-          -d "{\"content\":\"📢 Có hoạt động mới trên GitHub\nRepository: ${{ github.repository }}\nNgười thực hiện: ${{ github.actor }}\nSự kiện: ${{ github.event_name }}\nNhánh: ${{ github.ref_name }}\"}" \
-          ${{ secrets.DISCORD_WEBHOOK }}
+          payload=$(jq -n \
+            --arg repository "$REPOSITORY" \
+            --arg actor "$ACTOR" \
+            --arg event "$EVENT_NAME" \
+            --arg ref "$REF_NAME" \
+            '{content: "📢 Có hoạt động mới trên GitHub\nRepository: \($repository)\nNgười thực hiện: \($actor)\nSự kiện: \($event)\nNhánh: \($ref)"}')
+
+          curl --fail-with-body \
+            -H "Content-Type: application/json" \
+            -d "$payload" \
+            "$DISCORD_WEBHOOK"
