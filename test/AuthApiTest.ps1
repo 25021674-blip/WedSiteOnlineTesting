@@ -100,7 +100,7 @@ Write-Host "1. Registering user..." -ForegroundColor Green
 
 $registerResponse = Invoke-JsonRequest `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/register" `
+    -Url "$BaseUrl/api/auth/student/register" `
     -Body $registerBody
 
 $registerResponse | ConvertTo-Json -Depth 10
@@ -115,7 +115,7 @@ Write-Host "2. Logging in..." -ForegroundColor Green
 
 $loginResponse = Invoke-JsonRequest `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/login" `
+    -Url "$BaseUrl/api/auth/student/login" `
     -Body $loginBody
 
 $loginResponse | ConvertTo-Json -Depth 10
@@ -133,7 +133,7 @@ $invalidRegisterBody = @{
 Test-ExpectedError `
     -Name "3. Register validation errors..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/register" `
+    -Url "$BaseUrl/api/auth/student/register" `
     -Body $invalidRegisterBody `
     -ExpectedStatus 400
 
@@ -146,7 +146,7 @@ $duplicateRegisterBody = @{
 Test-ExpectedError `
     -Name "4. Registering duplicate email..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/register" `
+    -Url "$BaseUrl/api/auth/student/register" `
     -Body $duplicateRegisterBody `
     -ExpectedStatus 409
 
@@ -158,7 +158,7 @@ $wrongPasswordBody = @{
 Test-ExpectedError `
     -Name "5. Logging in with wrong password..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/login" `
+    -Url "$BaseUrl/api/auth/student/login" `
     -Body $wrongPasswordBody `
     -ExpectedStatus 401
 $validationId = Get-Date -Format "yyyyMMddHHmmssfff"
@@ -171,7 +171,7 @@ $loginBlankEmailBody = @{
 Test-ExpectedError `
     -Name "6. Login with blank email..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/login" `
+    -Url "$BaseUrl/api/auth/student/login" `
     -Body $loginBlankEmailBody `
     -ExpectedStatus 400
 
@@ -183,7 +183,7 @@ $loginBlankPasswordBody = @{
 Test-ExpectedError `
     -Name "7. Login with blank password..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/login" `
+    -Url "$BaseUrl/api/auth/student/login" `
     -Body $loginBlankPasswordBody `
     -ExpectedStatus 400
 
@@ -196,7 +196,7 @@ $registerBlankFullNameBody = @{
 Test-ExpectedError `
     -Name "8. Register with blank full name..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/register" `
+    -Url "$BaseUrl/api/auth/student/register" `
     -Body $registerBlankFullNameBody `
     -ExpectedStatus 400
 
@@ -211,7 +211,7 @@ $registerLongFullNameBody = @{
 Test-ExpectedError `
     -Name "9. Register with full name over 100 characters..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/register" `
+    -Url "$BaseUrl/api/auth/student/register" `
     -Body $registerLongFullNameBody `
     -ExpectedStatus 400
 
@@ -224,7 +224,7 @@ $registerBlankEmailBody = @{
 Test-ExpectedError `
     -Name "10. Register with blank email..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/register" `
+    -Url "$BaseUrl/api/auth/student/register" `
     -Body $registerBlankEmailBody `
     -ExpectedStatus 400
 
@@ -237,7 +237,7 @@ $registerBlankPasswordBody = @{
 Test-ExpectedError `
     -Name "11. Register with blank password..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/register" `
+    -Url "$BaseUrl/api/auth/student/register" `
     -Body $registerBlankPasswordBody `
     -ExpectedStatus 400
 
@@ -250,7 +250,7 @@ $registerShortPasswordBody = @{
 Test-ExpectedError `
     -Name "12. Register with password shorter than 8 characters..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/register" `
+    -Url "$BaseUrl/api/auth/student/register" `
     -Body $registerShortPasswordBody `
     -ExpectedStatus 400
 
@@ -265,6 +265,6 @@ $registerLongPasswordBody = @{
 Test-ExpectedError `
     -Name "13. Register with password over 72 characters..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/register" `
+    -Url "$BaseUrl/api/auth/student/register" `
     -Body $registerLongPasswordBody `
     -ExpectedStatus 400    

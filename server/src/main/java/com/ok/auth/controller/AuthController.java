@@ -21,14 +21,25 @@ public class AuthController {
 
     private final AuthService authService;
 
-    @PostMapping("/register")
+    @PostMapping("/student/register")
     @ResponseStatus(HttpStatus.CREATED)
-    public AuthResponse register(@Valid @RequestBody RegisterRequest request) {
-        return authService.register(request);
+    public AuthResponse registerStudent(@Valid @RequestBody RegisterRequest request) {
+        return authService.registerStudent(request);
     }
 
-    @PostMapping("/login")
-    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
+    @PostMapping("/student/login")
+    public AuthResponse loginStudent(@Valid @RequestBody LoginRequest request) {
+        return authService.loginStudent(request);
+    }
+
+    @PostMapping("teacher/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AuthResponse registerTeacher(@Valid @RequestBody RegisterRequest request) {
+        return authService.registerTeacher(request);
+    }
+
+    @PostMapping("teacher/login")
+    public AuthResponse loginTeacher(@Valid @RequestBody LoginRequest request) {
+        return authService.loginTeacher(request);
     }
 }

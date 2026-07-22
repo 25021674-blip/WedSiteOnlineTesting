@@ -26,7 +26,7 @@ public class AuthService {
     private final JwtService jwtService;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse registerStudent(RegisterRequest request) {
         String email = request.email().trim().toLowerCase();
 
         if (userRepository.existsByEmailIgnoreCase(email)) {
@@ -42,7 +42,25 @@ public class AuthService {
         return toResponse(userRepository.save(user));
     }
 
-    public AuthResponse login(LoginRequest request) {
+    @Transactional
+    public AuthResponse registerTeacher(RegisterRequest request) {
+        String email = request.email().trim().toLowerCase();
+
+        if (userRepository.existsByEmailIgnoreCase(email)) {
+            throw new ResponseStatusException(CONFLICT, "Email đã được sử dụng");
+        }
+
+        UserEntity teacher = new UserEntity(
+                request.fullName().trim(),
+                email,
+                passwordEncoder.encode(request.password()),
+                Role.TEACHER
+        );
+
+        return toResponse(userRepository.save(teacher));
+    }
+
+    public AuthResponse loginStudent(LoginRequest request) {
         String email = request.email().trim().toLowerCase();
         authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, request.password()));
         UserEntity user = userRepository.findByEmailIgnoreCase(email)
