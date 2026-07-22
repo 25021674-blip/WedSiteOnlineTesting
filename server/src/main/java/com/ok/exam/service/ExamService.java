@@ -11,12 +11,14 @@ import org.springframework.web.server.ResponseStatusException;
 import com.ok.dto.CreateExamRequest;
 import com.ok.dto.ExamResponse;
 import com.ok.dto.ExamStatus;
+import com.ok.dto.ExamType;
 import com.ok.dto.Role;
 import com.ok.dto.UpdateExamRequest;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.UserEntity;
 import com.ok.exam.exception.ExamNotFoundException;
 import com.ok.repository.ExamRepository;
+import com.ok.repository.QuestionRepository;
 import com.ok.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -26,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class ExamService {
     private final ExamRepository examRepository;
     private final UserRepository userRepository;
+    private final QuestionRepository questionRepository;
 
     @Transactional
     public ExamResponse createExam(CreateExamRequest request, String email) {
@@ -74,6 +77,11 @@ public class ExamService {
     public ExamResponse changeStatus(Long id, ExamStatus status, String email) {
         ExamEntity exam = findExam(id);
         requireOwnerOrAdmin(exam, currentUser(email));
+        if (status == ExamStatus.PUBLISHED && exam.getType() == ExamType.MULTIPLE_CHOICE
+                && questionRepository.countByExamId(exam.getId()) == 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Phải thêm ít nhất một câu hỏi trước khi công khai bài kiểm tra");
+        }
         exam.changeStatus(status);
         return toResponse(exam);
     }
@@ -83,6 +91,7 @@ public class ExamService {
         ExamEntity exam = findExam(id);
         requireOwnerOrAdmin(exam, currentUser(email));
         requireDraft(exam);
+        questionRepository.deleteByExamId(id);
         examRepository.delete(exam);
     }
 
