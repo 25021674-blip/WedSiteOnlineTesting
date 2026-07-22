@@ -13,6 +13,7 @@ public record ExamResponse(
         Integer durationMinutes,
         Long createdById,
         String createdByName,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        EssayAssignmentFileResponse assignmentFile
 ) {
 }
