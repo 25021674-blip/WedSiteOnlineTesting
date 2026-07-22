@@ -9,14 +9,19 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.dto.CreateExamRequest;
+import com.ok.dto.EssayAssignmentFileResponse;
 import com.ok.dto.ExamResponse;
 import com.ok.dto.ExamStatus;
+import com.ok.dto.ExamType;
 import com.ok.dto.Role;
 import com.ok.dto.UpdateExamRequest;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.UserEntity;
+import com.ok.essay.entity.EssayAssignmentFileEntity;
+import com.ok.essay.service.FileStorageService;
 import com.ok.exam.exception.ExamNotFoundException;
 import com.ok.repository.ExamRepository;
+import com.ok.repository.EssayAssignmentFileRepository;
 import com.ok.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -26,6 +31,8 @@ import lombok.RequiredArgsConstructor;
 public class ExamService {
     private final ExamRepository examRepository;
     private final UserRepository userRepository;
+    private final EssayAssignmentFileRepository assignmentFileRepository;
+    private final FileStorageService storageService;
 
     @Transactional
     public ExamResponse createExam(CreateExamRequest request, String email) {
@@ -74,6 +81,11 @@ public class ExamService {
     public ExamResponse changeStatus(Long id, ExamStatus status, String email) {
         ExamEntity exam = findExam(id);
         requireOwnerOrAdmin(exam, currentUser(email));
+        if (status == ExamStatus.PUBLISHED && exam.getType() == ExamType.ESSAY
+                && !assignmentFileRepository.existsByExamId(exam.getId())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Phải tải file đề tự luận lên trước khi công khai bài kiểm tra");
+        }
         exam.changeStatus(status);
         return toResponse(exam);
     }
@@ -83,6 +95,12 @@ public class ExamService {
         ExamEntity exam = findExam(id);
         requireOwnerOrAdmin(exam, currentUser(email));
         requireDraft(exam);
+        assignmentFileRepository.findByExamId(id).ifPresent(assignment -> {
+            String path = assignment.getStoragePath();
+            assignmentFileRepository.delete(assignment);
+            assignmentFileRepository.flush();
+            storageService.deleteAssignmentQuietly(path);
+        });
         examRepository.delete(exam);
     }
 
@@ -134,8 +152,17 @@ public class ExamService {
     }
 
     public ExamResponse toResponse(ExamEntity exam) {
+        EssayAssignmentFileResponse assignmentFile = assignmentFileRepository.findByExamId(exam.getId())
+                .map(this::toAssignmentResponse)
+                .orElse(null);
         return new ExamResponse(exam.getId(), exam.getTitle(), exam.getDescription(), exam.getType(),
                 exam.getStatus(), exam.getStartTime(), exam.getDeadline(), exam.getDurationMinutes(),
-                exam.getCreatedBy().getId(), exam.getCreatedBy().getFullName(), exam.getCreatedAt());
+                exam.getCreatedBy().getId(), exam.getCreatedBy().getFullName(), exam.getCreatedAt(),
+                assignmentFile);
+    }
+
+    private EssayAssignmentFileResponse toAssignmentResponse(EssayAssignmentFileEntity value) {
+        return new EssayAssignmentFileResponse(value.getId(), value.getExam().getId(),
+                value.getOriginalFileName(), value.getFileSize(), value.getUploadedAt());
     }
 }
