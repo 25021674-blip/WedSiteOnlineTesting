@@ -7,6 +7,10 @@ plugins {
 group = 'com.ok'
 version = '0.0.1-SNAPSHOT'
 
+if (project.hasProperty('buildDirOverride')) {
+    layout.buildDirectory = file(project.property('buildDirOverride'))
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
