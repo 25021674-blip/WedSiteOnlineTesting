@@ -25,7 +25,7 @@ import lombok.NoArgsConstructor;
                 columnNames = {"attempt_id", "question_id"}
         )
 )
-public class StudentAnswerEntityDemo {
+public class StudentAnswerEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -52,7 +52,7 @@ public class StudentAnswerEntityDemo {
     @Column(name = "is_correct")
     private Boolean correct;
 
-    public StudentAnswerEntityDemo(
+    public StudentAnswerEntity(
             ExamAttemptEntity attempt,
             QuestionEntity question,
             QuestionOptionEntity selectedOption,

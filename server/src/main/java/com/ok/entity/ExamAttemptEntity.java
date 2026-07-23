@@ -3,7 +3,7 @@ package com.ok.entity;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import com.ok.dto.ExamAttemptStatusDemo;
+import com.ok.dto.ExamAttemptStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -45,7 +45,7 @@ public class ExamAttemptEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private ExamAttemptStatusDemo status;
+    private ExamAttemptStatus status;
 
     @Column(name = "screen_exit_count", nullable = false)
     private Integer screenExitCount = 0;
@@ -57,6 +57,6 @@ public class ExamAttemptEntity {
         this.exam = exam;
         this.student = student;
         this.startedAt = LocalDateTime.now();
-        this.status = ExamAttemptStatusDemo.IN_PROGRESS;
+        this.status = ExamAttemptStatus.IN_PROGRESS;
     }
 }

@@ -1,6 +1,6 @@
 package com.ok.repository;
 
-public interface TeacherExamSummaryViewDemo {
+public interface TeacherExamSummaryView {
 
     String getTitle();
 

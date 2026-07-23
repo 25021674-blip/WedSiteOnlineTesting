@@ -23,7 +23,7 @@ public interface TeacherExamRepositoryDemo
             GROUP BY exam.id, exam.title, exam.createdAt
             ORDER BY exam.createdAt DESC
             """)
-    List<TeacherExamSummaryViewDemo> findSummariesByTeacherId(
+    List<TeacherExamSummaryView> findSummariesByTeacherId(
             @Param("teacherId") Long teacherId
     );
 }

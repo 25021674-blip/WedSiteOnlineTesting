@@ -1,6 +1,6 @@
 package com.ok.dto;
 
-public record TeacherExamSummaryResponseDemo(
+public record TeacherExamSummaryResponse(
         String title,
         long completedStudentCount
 ) {

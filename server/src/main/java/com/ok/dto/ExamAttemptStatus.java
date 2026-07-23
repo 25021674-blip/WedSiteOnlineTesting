@@ -1,6 +1,6 @@
 package com.ok.dto;
 
-public enum ExamAttemptStatusDemo {
+public enum ExamAttemptStatus {
     IN_PROGRESS,
     SUBMITTED,
     AUTO_SUBMITTED
