@@ -8,7 +8,7 @@ import org.springframework.data.repository.query.Param;
 
 import com.ok.entity.ExamEntity;
 
-public interface TeacherExamRepositoryDemo
+public interface TeacherExamRepository
         extends Repository<ExamEntity, Long> {
 
     @Query("""

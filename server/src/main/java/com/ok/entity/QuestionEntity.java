@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ok.dto.QuestionType;
+import com.ok.domain.enums.QuestionType;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

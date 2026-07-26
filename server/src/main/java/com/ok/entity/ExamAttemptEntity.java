@@ -1,9 +1,9 @@
 package com.ok.entity;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
-import com.ok.dto.ExamAttemptStatus;
+import com.ok.domain.enums.ExamAttemptStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,6 +16,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -29,6 +30,9 @@ public class ExamAttemptEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "exam_id", nullable = false)
     private ExamEntity exam;
@@ -38,10 +42,19 @@ public class ExamAttemptEntity {
     private UserEntity student;
 
     @Column(name = "started_at", nullable = false, updatable = false)
-    private LocalDateTime startedAt;
+    private Instant startedAt;
+
+    @Column(name = "deadline_at", nullable = false, updatable = false)
+    private Instant deadlineAt;
+
+    @Column(name = "last_heartbeat_at", nullable = false)
+    private Instant lastHeartbeatAt;
+
+    @Column(name = "last_activity_at", nullable = false)
+    private Instant lastActivityAt;
 
     @Column(name = "submitted_at")
-    private LocalDateTime submittedAt;
+    private Instant submittedAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -53,10 +66,17 @@ public class ExamAttemptEntity {
     @Column(precision = 5, scale = 2)
     private BigDecimal score;
 
-    public ExamAttemptEntity(ExamEntity exam, UserEntity student) {
+    public ExamAttemptEntity(
+            ExamEntity exam,
+            UserEntity student,
+            Instant deadlineAt
+    ) {
         this.exam = exam;
         this.student = student;
-        this.startedAt = LocalDateTime.now();
+        this.startedAt = Instant.now();
+        this.deadlineAt = deadlineAt;
+        this.lastHeartbeatAt = Instant.now();
+        this.lastActivityAt = this.lastHeartbeatAt;
         this.status = ExamAttemptStatus.IN_PROGRESS;
     }
 }

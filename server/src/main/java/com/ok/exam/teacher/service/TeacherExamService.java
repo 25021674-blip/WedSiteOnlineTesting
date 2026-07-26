@@ -1,4 +1,4 @@
-package com.ok.service;
+package com.ok.exam.teacher.service;
 
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
@@ -9,23 +9,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.ok.dto.Role;
-import com.ok.dto.TeacherExamSummaryResponseDemo;
+import com.ok.domain.enums.Role;
+import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
 import com.ok.entity.UserEntity;
-import com.ok.repository.TeacherExamRepositoryDemo;
+import com.ok.repository.TeacherExamRepository;
 import com.ok.repository.UserRepository;
 
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 @Service
-public class TeacherExamServiceDemo {
+public class TeacherExamService {
 
     private final UserRepository userRepository;
-    private final TeacherExamRepositoryDemo teacherExamRepository;
+    private final TeacherExamRepository teacherExamRepository;
 
     @Transactional(readOnly = true)
-    public List<TeacherExamSummaryResponseDemo> getExamSummaries(
+    public List<TeacherExamSummaryResponse> getExamSummaries(
             String authenticatedEmail
     ) {
         UserEntity teacher = userRepository
@@ -45,7 +45,7 @@ public class TeacherExamServiceDemo {
         return teacherExamRepository
                 .findSummariesByTeacherId(teacher.getId())
                 .stream()
-                .map(summary -> new TeacherExamSummaryResponseDemo(
+                .map(summary -> new TeacherExamSummaryResponse(
                         summary.getTitle(),
                         summary.getCompletedStudentCount()
                 ))

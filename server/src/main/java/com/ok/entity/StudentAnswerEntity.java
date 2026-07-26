@@ -1,6 +1,7 @@
 package com.ok.entity;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -31,6 +33,9 @@ public class StudentAnswerEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "attempt_id", nullable = false)
     private ExamAttemptEntity attempt;
@@ -45,6 +50,12 @@ public class StudentAnswerEntity {
 
     @Column(name = "essay_answer", columnDefinition = "TEXT")
     private String essayAnswer;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @Column(name = "client_revision", nullable = false)
+    private Long clientRevision = 0L;
 
     @Column(precision = 5, scale = 2)
     private BigDecimal score;
@@ -62,5 +73,6 @@ public class StudentAnswerEntity {
         this.question = question;
         this.selectedOption = selectedOption;
         this.essayAnswer = essayAnswer;
+        this.updatedAt = Instant.now();
     }
 }

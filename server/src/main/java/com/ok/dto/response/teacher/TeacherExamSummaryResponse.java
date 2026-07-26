@@ -1,4 +1,4 @@
-package com.ok.dto.response;
+package com.ok.dto.response.teacher;
 
 public record TeacherExamSummaryResponse(
         String title,

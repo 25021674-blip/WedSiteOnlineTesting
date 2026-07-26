@@ -1,0 +1,38 @@
+package com.ok.repository;
+
+import java.time.Instant;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.ok.domain.enums.ExamAttemptStatus;
+import com.ok.entity.ExamAttemptEntity;
+
+public interface StudentExamAttemptRepository
+        extends JpaRepository<ExamAttemptEntity, Long> {
+
+    Optional<ExamAttemptEntity>
+            findFirstByExam_IdAndStudent_IdOrderByStartedAtDesc(
+                    Long examId,
+                    Long studentId
+            );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE ExamAttemptEntity attempt
+            SET attempt.status = :newStatus,
+                attempt.submittedAt = :submittedAt,
+                attempt.version = attempt.version + 1
+            WHERE attempt.id = :attemptId
+              AND attempt.status = :expectedStatus
+            """)
+    int markAutoSubmitted(
+            @Param("attemptId") Long attemptId,
+            @Param("expectedStatus") ExamAttemptStatus expectedStatus,
+            @Param("newStatus") ExamAttemptStatus newStatus,
+            @Param("submittedAt") Instant submittedAt
+    );
+}

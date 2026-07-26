@@ -1,9 +1,9 @@
 package com.ok.entity;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
-import com.ok.dto.ExamType;
+import com.ok.domain.enums.ExamType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,13 +41,13 @@ public class ExamEntity {
     private String description;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "start_at", nullable = false)
-    private LocalDateTime startAt;
+    private Instant startAt;
 
     @Column(name = "expires_at", nullable = false)
-    private LocalDateTime expiresAt;
+    private Instant expiresAt;
 
     @Column(name = "duration_minutes", nullable = false)
     private Integer durationMinutes;
@@ -63,8 +63,8 @@ public class ExamEntity {
             UserEntity teacher,
             String title,
             String description,
-            LocalDateTime startAt,
-            LocalDateTime expiresAt,
+            Instant startAt,
+            Instant expiresAt,
             Integer durationMinutes,
             BigDecimal maxScore,
             ExamType type
@@ -82,7 +82,7 @@ public class ExamEntity {
     @PrePersist
     private void setCreatedAt() {
         if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+            createdAt = Instant.now();
         }
     }
 }

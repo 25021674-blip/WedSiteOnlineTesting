@@ -1,4 +1,4 @@
-package com.ok.controller;
+package com.ok.exam.teacher.controller;
 
 import java.util.List;
 
@@ -7,20 +7,20 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ok.dto.TeacherExamSummaryResponseDemo;
-import com.ok.service.TeacherExamServiceDemo;
+import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
+import com.ok.exam.teacher.service.TeacherExamService;
 
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api/teacher/exams")
-public class TeacherExamControllerDemo {
+public class TeacherExamController {
 
-    private final TeacherExamServiceDemo teacherExamService;
+    private final TeacherExamService teacherExamService;
 
     @GetMapping
-    public List<TeacherExamSummaryResponseDemo> getExamSummaries(
+    public List<TeacherExamSummaryResponse> getExamSummaries(
             Authentication authentication
     ) {
         return teacherExamService.getExamSummaries(authentication.getName());
