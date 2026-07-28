@@ -29,7 +29,7 @@ import com.ok.dto.response.student.StudentExamScreenResponse.ExamInfo;
 import com.ok.dto.response.student.StudentExamScreenResponse.OptionInfo;
 import com.ok.dto.response.student.StudentExamScreenResponse.Progress;
 import com.ok.dto.response.student.StudentExamScreenResponse.QuestionInfo;
-import com.ok.dto.response.student.SubmitStudentExamResponseDemo;
+import com.ok.dto.response.student.SubmitStudentExamResponse;
 import com.ok.entity.ExamAttemptEntity;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.QuestionEntity;
@@ -133,7 +133,7 @@ public class StudentExamAttemptService {
     }
 
     @Transactional
-    public SubmitStudentExamResponseDemo submitAttempt(
+    public SubmitStudentExamResponse submitAttempt(
             Long examId,
             Long attemptId,
             String authenticatedEmail
@@ -219,11 +219,11 @@ public class StudentExamAttemptService {
         }
     }
 
-    private SubmitStudentExamResponseDemo createSubmitResponse(
+    private SubmitStudentExamResponse createSubmitResponse(
             ExamAttemptEntity attempt,
             Instant serverTime
     ) {
-        return new SubmitStudentExamResponseDemo(
+        return new SubmitStudentExamResponse(
                 attempt.getId(),
                 attempt.getStatus(),
                 attempt.getSubmittedAt(),

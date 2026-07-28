@@ -52,4 +52,27 @@ public interface StudentExamAttemptRepository
             @Param("newStatus") ExamAttemptStatus newStatus,
             @Param("submittedAt") Instant submittedAt
     );
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE ExamAttemptEntity attempt
+            SET attempt.status = :newStatus,
+                attempt.submittedAt = :serverTime,
+                attempt.version = attempt.version + 1
+            WHERE attempt.status = :expectedStatus
+              AND (
+                    attempt.deadlineAt <= :serverTime
+                    OR EXISTS (
+                        SELECT exam.id
+                        FROM ExamEntity exam
+                        WHERE exam = attempt.exam
+                          AND exam.expiresAt <= :serverTime
+                    )
+              )
+            """)
+    int markExpiredAttemptsAutoSubmitted(
+            @Param("expectedStatus") ExamAttemptStatus expectedStatus,
+            @Param("newStatus") ExamAttemptStatus newStatus,
+            @Param("serverTime") Instant serverTime
+    );
 }

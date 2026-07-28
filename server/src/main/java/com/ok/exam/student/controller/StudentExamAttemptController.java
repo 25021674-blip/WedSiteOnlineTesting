@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ok.dto.response.student.StudentExamScreenResponse;
-import com.ok.dto.response.student.SubmitStudentExamResponseDemo;
+import com.ok.dto.response.student.SubmitStudentExamResponse;
 import com.ok.exam.student.service.StudentExamAttemptService;
 
 import lombok.AllArgsConstructor;
@@ -31,7 +31,7 @@ public class StudentExamAttemptController {
     }
 
     @PostMapping("/{examId}/attempts/{attemptId}/submit")
-    public SubmitStudentExamResponseDemo submitAttempt(
+    public SubmitStudentExamResponse submitAttempt(
             @PathVariable Long examId,
             @PathVariable Long attemptId,
             Authentication authentication

@@ -4,7 +4,7 @@ import java.time.Instant;
 
 import com.ok.domain.enums.ExamAttemptStatus;
 
-public record SubmitStudentExamResponseDemo(
+public record SubmitStudentExamResponse(
         Long attemptId,
         ExamAttemptStatus status,
         Instant submittedAt,

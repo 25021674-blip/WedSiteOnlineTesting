@@ -115,7 +115,7 @@ Write-Host "2. Logging in..." -ForegroundColor Green
 
 $loginResponse = Invoke-JsonRequest `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/student/login" `
+    -Url "$BaseUrl/api/auth/login" `
     -Body $loginBody
 
 $loginResponse | ConvertTo-Json -Depth 10
@@ -158,7 +158,7 @@ $wrongPasswordBody = @{
 Test-ExpectedError `
     -Name "5. Logging in with wrong password..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/student/login" `
+    -Url "$BaseUrl/api/auth/login" `
     -Body $wrongPasswordBody `
     -ExpectedStatus 401
 $validationId = Get-Date -Format "yyyyMMddHHmmssfff"
@@ -171,7 +171,7 @@ $loginBlankEmailBody = @{
 Test-ExpectedError `
     -Name "6. Login with blank email..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/student/login" `
+    -Url "$BaseUrl/api/auth/login" `
     -Body $loginBlankEmailBody `
     -ExpectedStatus 400
 
@@ -183,7 +183,7 @@ $loginBlankPasswordBody = @{
 Test-ExpectedError `
     -Name "7. Login with blank password..." `
     -Method "Post" `
-    -Url "$BaseUrl/api/auth/student/login" `
+    -Url "$BaseUrl/api/auth/login" `
     -Body $loginBlankPasswordBody `
     -ExpectedStatus 400
 
