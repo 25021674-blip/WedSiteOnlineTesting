@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -28,6 +29,7 @@ import com.ok.dto.response.student.StudentExamScreenResponse.ExamInfo;
 import com.ok.dto.response.student.StudentExamScreenResponse.OptionInfo;
 import com.ok.dto.response.student.StudentExamScreenResponse.Progress;
 import com.ok.dto.response.student.StudentExamScreenResponse.QuestionInfo;
+import com.ok.dto.response.student.SubmitStudentExamResponseDemo;
 import com.ok.entity.ExamAttemptEntity;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.QuestionEntity;
@@ -126,6 +128,105 @@ public class StudentExamAttemptService {
                 attempt,
                 questions,
                 answers,
+                serverTime
+        );
+    }
+
+    @Transactional
+    public SubmitStudentExamResponseDemo submitAttempt(
+            Long examId,
+            Long attemptId,
+            String authenticatedEmail
+    ) {
+        validateSubmitRequest(
+                examId,
+                attemptId,
+                authenticatedEmail
+        );
+
+        ExamAttemptEntity attempt = attemptRepository
+                .findOwnedByIdForUpdate(
+                        attemptId,
+                        authenticatedEmail
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        NOT_FOUND,
+                        "Không tìm thấy lượt làm bài"
+                ));
+
+        validateSubmitOwnership(attempt, examId);
+
+        Instant serverTime = Instant.now();
+
+        if (attempt.getStatus() != ExamAttemptStatus.IN_PROGRESS) {
+            return createSubmitResponse(attempt, serverTime);
+        }
+
+        Instant effectiveDeadline = attempt.getDeadlineAt()
+                .isBefore(attempt.getExam().getExpiresAt())
+                ? attempt.getDeadlineAt()
+                : attempt.getExam().getExpiresAt();
+
+        if (serverTime.isBefore(effectiveDeadline)) {
+            attempt.submit(serverTime);
+        } else {
+            attempt.autoSubmit(serverTime);
+        }
+
+        ExamAttemptEntity savedAttempt = attemptRepository
+                .saveAndFlush(attempt);
+
+        return createSubmitResponse(savedAttempt, serverTime);
+    }
+
+    private void validateSubmitRequest(
+            Long examId,
+            Long attemptId,
+            String authenticatedEmail
+    ) {
+        if (authenticatedEmail == null || authenticatedEmail.isBlank()) {
+            throw new ResponseStatusException(
+                    UNAUTHORIZED,
+                    "Tài khoản chưa được xác thực"
+            );
+        }
+
+        if (examId == null || examId <= 0
+                || attemptId == null || attemptId <= 0) {
+            throw new ResponseStatusException(
+                    BAD_REQUEST,
+                    "Mã bài kiểm tra và lượt làm bài phải lớn hơn 0"
+            );
+        }
+    }
+
+    private void validateSubmitOwnership(
+            ExamAttemptEntity attempt,
+            Long examId
+    ) {
+        if (attempt.getStudent().getRole() != Role.STUDENT) {
+            throw new ResponseStatusException(
+                    FORBIDDEN,
+                    "Chỉ học sinh được nộp bài kiểm tra"
+            );
+        }
+
+        if (!Objects.equals(attempt.getExam().getId(), examId)) {
+            throw new ResponseStatusException(
+                    NOT_FOUND,
+                    "Lượt làm bài không thuộc bài kiểm tra này"
+            );
+        }
+    }
+
+    private SubmitStudentExamResponseDemo createSubmitResponse(
+            ExamAttemptEntity attempt,
+            Instant serverTime
+    ) {
+        return new SubmitStudentExamResponseDemo(
+                attempt.getId(),
+                attempt.getStatus(),
+                attempt.getSubmittedAt(),
                 serverTime
         );
     }

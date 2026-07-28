@@ -2,6 +2,7 @@ package com.ok.entity;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -74,5 +75,44 @@ public class StudentAnswerEntity {
         this.selectedOption = selectedOption;
         this.essayAnswer = essayAnswer;
         this.updatedAt = Instant.now();
+    }
+
+    public void updateMultipleChoice(
+            QuestionOptionEntity selectedOption,
+            Long newClientRevision,
+            Instant newUpdatedAt
+    ) {
+        this.selectedOption = Objects.requireNonNull(selectedOption);
+        this.essayAnswer = null;
+        updateRevision(newClientRevision, newUpdatedAt);
+    }
+
+    public void updateEssay(
+            String essayAnswer,
+            Long newClientRevision,
+            Instant newUpdatedAt
+    ) {
+        this.selectedOption = null;
+        this.essayAnswer = Objects.requireNonNull(essayAnswer);
+        updateRevision(newClientRevision, newUpdatedAt);
+    }
+
+    private void updateRevision(
+            Long newClientRevision,
+            Instant newUpdatedAt
+    ) {
+        long currentRevision = clientRevision == null
+                ? 0L
+                : clientRevision;
+
+        if (newClientRevision == null
+                || newClientRevision <= currentRevision) {
+            throw new IllegalArgumentException(
+                    "Client revision mới phải lớn hơn revision hiện tại"
+            );
+        }
+
+        this.clientRevision = newClientRevision;
+        this.updatedAt = Objects.requireNonNull(newUpdatedAt);
     }
 }

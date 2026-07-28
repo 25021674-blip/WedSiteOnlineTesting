@@ -2,6 +2,7 @@ package com.ok.entity;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 
 import com.ok.domain.enums.ExamAttemptStatus;
 
@@ -78,5 +79,34 @@ public class ExamAttemptEntity {
         this.lastHeartbeatAt = Instant.now();
         this.lastActivityAt = this.lastHeartbeatAt;
         this.status = ExamAttemptStatus.IN_PROGRESS;
+    }
+
+    public void recordActivity(Instant activityAt) {
+        Instant newActivityAt = Objects.requireNonNull(activityAt);
+
+        if (lastActivityAt == null
+                || newActivityAt.isAfter(lastActivityAt)) {
+            this.lastActivityAt = newActivityAt;
+        }
+    }
+
+    public void autoSubmit(Instant submittedAt) {
+        if (status != ExamAttemptStatus.IN_PROGRESS) {
+            return;
+        }
+
+        this.status = ExamAttemptStatus.AUTO_SUBMITTED;
+        this.submittedAt = Objects.requireNonNull(submittedAt);
+    }
+
+    public void submit(Instant submittedAt) {
+        if (status != ExamAttemptStatus.IN_PROGRESS) {
+            return;
+        }
+
+        Instant submissionTime = Objects.requireNonNull(submittedAt);
+        this.status = ExamAttemptStatus.SUBMITTED;
+        this.submittedAt = submissionTime;
+        recordActivity(submissionTime);
     }
 }

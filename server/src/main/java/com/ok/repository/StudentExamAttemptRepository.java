@@ -3,13 +3,17 @@ package com.ok.repository;
 import java.time.Instant;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ok.domain.enums.ExamAttemptStatus;
 import com.ok.entity.ExamAttemptEntity;
+
+import jakarta.persistence.LockModeType;
 
 public interface StudentExamAttemptRepository
         extends JpaRepository<ExamAttemptEntity, Long> {
@@ -19,6 +23,19 @@ public interface StudentExamAttemptRepository
                     Long examId,
                     Long studentId
             );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = {"exam", "student"})
+    @Query("""
+            SELECT attempt
+            FROM ExamAttemptEntity attempt
+            WHERE attempt.id = :attemptId
+              AND LOWER(attempt.student.email) = LOWER(:studentEmail)
+            """)
+    Optional<ExamAttemptEntity> findOwnedByIdForUpdate(
+            @Param("attemptId") Long attemptId,
+            @Param("studentEmail") String studentEmail
+    );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
