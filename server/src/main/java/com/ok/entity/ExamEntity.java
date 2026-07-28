@@ -52,6 +52,7 @@ public class ExamEntity {
 
     private Integer durationMinutes;
 
+    //Quan hệ nhiều kỳ thi thuộc về một người tạo. fetch = LAZY nghĩa là chỉ load UserEntity khi cần.
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "created_by", nullable = false)
     private UserEntity createdBy;
@@ -78,7 +79,7 @@ public class ExamEntity {
         this.createdBy = createdBy;
     }
 
-    public void update(String title, String description, LocalDateTime startTime,
+    public void update(String title, String description, LocalDateTime startTime,//chỉ sửa được trong trạng thái DRAFT, và ko sửa được loại bài kiểm tra,và chỉ người tạo mới có thể update()
                        LocalDateTime deadline, Integer durationMinutes) {
         this.title = title;
         this.description = description;
@@ -91,6 +92,7 @@ public class ExamEntity {
         this.status = status;
     }
 
+    //Trước khi insert vào DB, nếu createdAt chưa có thì gán LocalDateTime.now(). Nếu status chưa có thì gán mặc định ExamStatus.DRAFT.
     @PrePersist
     void onCreate() {
         if (createdAt == null) {

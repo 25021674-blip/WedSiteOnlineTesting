@@ -3,6 +3,7 @@ package com.ok.quiz.controller;
 import java.security.Principal;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import com.ok.dto.QuizAttemptResponse;
 import com.ok.dto.QuizResultResponse;
 import com.ok.dto.SubmitQuizRequest;
 import com.ok.quiz.service.QuizSubmissionService;
@@ -14,6 +15,23 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class QuizSubmissionController {
     private final QuizSubmissionService service;
+
+    @PostMapping("/start")
+    @ResponseStatus(HttpStatus.CREATED)
+    public QuizAttemptResponse start(@PathVariable Long examId, Principal principal) {
+        return service.start(examId, principal.getName());
+    }
+
+    @GetMapping("/attempt")
+    public QuizAttemptResponse attempt(@PathVariable Long examId, Principal principal) {
+        return service.getAttempt(examId, principal.getName());
+    }
+
+    @PutMapping("/answers")
+    public QuizAttemptResponse saveAnswers(@PathVariable Long examId,
+            @Valid @RequestBody SubmitQuizRequest request, Principal principal) {
+        return service.saveAnswers(examId, request, principal.getName());
+    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)

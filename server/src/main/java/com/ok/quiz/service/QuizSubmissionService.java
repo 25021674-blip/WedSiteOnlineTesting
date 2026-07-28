@@ -6,8 +6,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -15,8 +18,8 @@ import org.springframework.web.server.ResponseStatusException;
 import com.ok.dto.*;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.UserEntity;
-import com.ok.quiz.entity.*;
 import com.ok.exam.service.ExamService;
+import com.ok.quiz.entity.*;
 import com.ok.repository.QuestionRepository;
 import com.ok.repository.QuizSubmissionAnswerRepository;
 import com.ok.repository.QuizSubmissionRepository;
@@ -32,75 +35,198 @@ public class QuizSubmissionService {
     private final ExamService examService;
 
     @Transactional
-    public QuizResultResponse submit(Long examId, SubmitQuizRequest request, String email) {
+    public QuizAttemptResponse start(Long examId, String email) {
         ExamEntity exam = examService.findExam(examId);
         UserEntity student = examService.currentUser(email);
-        requireOpenQuiz(exam, student);
-        if (submissionRepository.existsByExamIdAndStudentId(examId, student.getId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bạn đã nộp bài trắc nghiệm này");
+        requireQuizCanStart(exam, student);
+
+        QuizSubmissionEntity existing = submissionRepository
+                .findByExamIdAndStudentId(examId, student.getId()).orElse(null);
+        if (existing != null) {
+            finalizeIfExpired(existing, LocalDateTime.now());
+            return attemptResponse(existing);
         }
 
-        List<QuestionEntity> questions = questionRepository.findByExamIdOrderById(examId);
-        if (questions.isEmpty()) throw invalid("Đề chưa có câu hỏi");
-        Map<Long, SelectedAnswerRequest> selected = indexAnswers(request.answers());
-        if (selected.size() != questions.size()) throw invalid("Bạn phải trả lời đầy đủ mỗi câu đúng một lần");
-
-        double total = questions.stream().mapToDouble(QuestionEntity::getPoints).sum();
-        double score = 0;
-        Map<QuestionEntity, AnswerOptionEntity> chosen = new HashMap<>();
-        for (QuestionEntity question : questions) {
-            SelectedAnswerRequest answer = selected.get(question.getId());
-            if (answer == null) throw invalid("Đáp án không thuộc đề kiểm tra");
-            AnswerOptionEntity option = question.getOptions().stream()
-                    .filter(o -> o.getId().equals(answer.selectedOptionId())).findFirst()
-                    .orElseThrow(() -> invalid("Lựa chọn không thuộc câu hỏi " + question.getId()));
-            chosen.put(question, option);
-            if (option.isCorrect()) score += question.getPoints();
-        }
-
-        QuizSubmissionEntity submission = submissionRepository.save(
-                new QuizSubmissionEntity(exam, student, score, total));
-        List<QuizSubmissionAnswerEntity> savedAnswers = chosen.entrySet().stream().map(entry -> {
-            boolean correct = entry.getValue().isCorrect();
-            return new QuizSubmissionAnswerEntity(submission, entry.getKey(), entry.getValue(), correct,
-                    correct ? entry.getKey().getPoints() : 0);
-        }).toList();
-        answerRepository.saveAll(savedAnswers);
-        return response(submission, savedAnswers);
+        LocalDateTime startedAt = LocalDateTime.now();
+        LocalDateTime durationEnd = startedAt.plusMinutes(exam.getDurationMinutes());
+        LocalDateTime expiresAt = durationEnd.isBefore(exam.getDeadline())
+                ? durationEnd : exam.getDeadline();
+        QuizSubmissionEntity attempt = submissionRepository.save(
+                new QuizSubmissionEntity(exam, student, startedAt, expiresAt));
+        return attemptResponse(attempt);
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
+    public QuizAttemptResponse getAttempt(Long examId, String email) {
+        UserEntity student = examService.currentUser(email);
+        requireStudent(student);
+        QuizSubmissionEntity attempt = findAttempt(examId, student.getId());
+        finalizeIfExpired(attempt, LocalDateTime.now());
+        return attemptResponse(attempt);
+    }
+
+    @Transactional
+    public QuizAttemptResponse saveAnswers(Long examId, SubmitQuizRequest request, String email) {
+        UserEntity student = examService.currentUser(email);
+        requireStudent(student);
+        QuizSubmissionEntity attempt = findAttempt(examId, student.getId());
+        requireInProgressAndNotExpired(attempt);
+        saveSelectedAnswers(attempt, request.answers());
+        return attemptResponse(attempt);
+    }
+
+    @Transactional
+    public QuizResultResponse submit(Long examId, SubmitQuizRequest request, String email) {
+        UserEntity student = examService.currentUser(email);
+        requireStudent(student);
+        QuizSubmissionEntity attempt = findAttempt(examId, student.getId());
+        if (attempt.getStatus() != QuizAttemptStatus.IN_PROGRESS) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài làm đã được kết thúc trước đó");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (!now.isBefore(attempt.getExpiresAt())) {
+            finalizeAttempt(attempt, true, now);
+            return resultResponse(attempt);
+        }
+
+        saveSelectedAnswers(attempt, request.answers());
+        finalizeAttempt(attempt, false, now);
+        return resultResponse(attempt);
+    }
+
+    @Transactional
     public QuizResultResponse getMine(Long examId, String email) {
         UserEntity student = examService.currentUser(email);
-        QuizSubmissionEntity submission = submissionRepository.findByExamIdAndStudentId(examId, student.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Bạn chưa nộp bài này"));
-        return response(submission, answerRepository.findBySubmissionIdOrderById(submission.getId()));
+        requireStudent(student);
+        QuizSubmissionEntity attempt = findAttempt(examId, student.getId());
+        finalizeIfExpired(attempt, LocalDateTime.now());
+        if (attempt.getStatus() == QuizAttemptStatus.IN_PROGRESS) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài làm chưa được nộp");
+        }
+        return resultResponse(attempt);
+    }
+
+    @Transactional
+    public void requireActiveAttempt(Long examId, UserEntity student) {
+        requireInProgressAndNotExpired(findAttempt(examId, student.getId()));
+    }
+
+    @Scheduled(fixedDelayString = "${app.quiz.expiration-check-ms:10000}")
+    @Transactional
+    public void autoSubmitExpiredAttempts() {
+        List<QuizSubmissionEntity> expired = submissionRepository
+                .findByStatusAndExpiresAtLessThanEqualOrderByExpiresAtAsc(
+                        QuizAttemptStatus.IN_PROGRESS, LocalDateTime.now(), PageRequest.of(0, 200));
+        LocalDateTime now = LocalDateTime.now();
+        expired.forEach(attempt -> finalizeAttempt(attempt, true, now));
+    }
+
+    private void saveSelectedAnswers(QuizSubmissionEntity attempt, List<SelectedAnswerRequest> answers) {
+        Map<Long, SelectedAnswerRequest> selected = indexAnswers(answers);
+        Map<Long, QuestionEntity> questions = questionRepository
+                .findByExamIdOrderById(attempt.getExam().getId()).stream()
+                .collect(Collectors.toMap(QuestionEntity::getId, question -> question));
+
+        for (SelectedAnswerRequest selectedAnswer : selected.values()) {
+            QuestionEntity question = questions.get(selectedAnswer.questionId());
+            if (question == null) throw invalid("Đáp án không thuộc đề trắc nghiệm này");
+            AnswerOptionEntity option = question.getOptions().stream()
+                    .filter(value -> value.getId().equals(selectedAnswer.selectedOptionId()))
+                    .findFirst()
+                    .orElseThrow(() -> invalid("Lựa chọn không thuộc câu hỏi " + question.getId()));
+            boolean correct = option.isCorrect();
+            double awardedPoints = correct ? question.getPoints() : 0;
+            QuizSubmissionAnswerEntity saved = answerRepository
+                    .findBySubmissionIdAndQuestionId(attempt.getId(), question.getId()).orElse(null);
+            if (saved == null) {
+                answerRepository.save(new QuizSubmissionAnswerEntity(
+                        attempt, question, option, correct, awardedPoints));
+            } else {
+                saved.select(option, correct, awardedPoints);
+            }
+        }
     }
 
     private Map<Long, SelectedAnswerRequest> indexAnswers(List<SelectedAnswerRequest> answers) {
         Map<Long, SelectedAnswerRequest> result = new HashMap<>();
         Set<Long> seen = new HashSet<>();
         for (SelectedAnswerRequest answer : answers) {
-            if (!seen.add(answer.questionId())) throw invalid("Một câu hỏi không được trả lời nhiều lần");
+            if (!seen.add(answer.questionId())) {
+                throw invalid("Một câu hỏi không được gửi nhiều lần trong cùng request");
+            }
             result.put(answer.questionId(), answer);
         }
         return result;
     }
 
-    private void requireOpenQuiz(ExamEntity exam, UserEntity student) {
-        if (student.getRole() != Role.STUDENT) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ học sinh được nộp bài");
+    private void finalizeIfExpired(QuizSubmissionEntity attempt, LocalDateTime now) {
+        if (attempt.getStatus() == QuizAttemptStatus.IN_PROGRESS
+                && !now.isBefore(attempt.getExpiresAt())) {
+            finalizeAttempt(attempt, true, now);
+        }
+    }
+
+    private void finalizeAttempt(QuizSubmissionEntity attempt, boolean automatic, LocalDateTime now) {
+        if (attempt.getStatus() != QuizAttemptStatus.IN_PROGRESS) return;
+        List<QuestionEntity> questions = questionRepository.findByExamIdOrderById(attempt.getExam().getId());
+        double totalPoints = questions.stream().mapToDouble(QuestionEntity::getPoints).sum();
+        double score = answerRepository.findBySubmissionIdOrderById(attempt.getId()).stream()
+                .mapToDouble(QuizSubmissionAnswerEntity::getAwardedPoints).sum();
+        if (automatic) attempt.autoSubmit(score, totalPoints);
+        else attempt.submit(score, totalPoints, now);
+    }
+
+    private QuizSubmissionEntity findAttempt(Long examId, Long studentId) {
+        return submissionRepository.findByExamIdAndStudentId(examId, studentId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Bạn chưa bắt đầu bài trắc nghiệm này"));
+    }
+
+    private void requireQuizCanStart(ExamEntity exam, UserEntity student) {
+        requireStudent(student);
         if (exam.getType() != ExamType.MULTIPLE_CHOICE) throw invalid("Đây không phải đề trắc nghiệm");
+        if (exam.getDurationMinutes() == null || exam.getDurationMinutes() <= 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Đề chưa có thời lượng làm bài hợp lệ");
+        }
         LocalDateTime now = LocalDateTime.now();
-        if (exam.getStatus() != ExamStatus.PUBLISHED || now.isBefore(exam.getStartTime()) || now.isAfter(exam.getDeadline())) {
+        if (exam.getStatus() != ExamStatus.PUBLISHED
+                || now.isBefore(exam.getStartTime()) || !now.isBefore(exam.getDeadline())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài kiểm tra chưa mở hoặc đã kết thúc");
         }
     }
 
-    private QuizResultResponse response(QuizSubmissionEntity submission, List<QuizSubmissionAnswerEntity> answers) {
-        return new QuizResultResponse(submission.getId(), submission.getExam().getId(), submission.getStudent().getId(),
-                submission.getScore(), submission.getTotalPoints(), submission.getSubmittedAt(),
-                answers.stream().map(a -> new QuizAnswerResultResponse(a.getQuestion().getId(),
-                        a.getSelectedOption().getId(), a.isCorrect(), a.getAwardedPoints())).toList());
+    private void requireStudent(UserEntity student) {
+        if (student.getRole() != Role.STUDENT) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Chỉ học sinh được làm bài");
+        }
+    }
+
+    private void requireInProgressAndNotExpired(QuizSubmissionEntity attempt) {
+        if (attempt.getStatus() != QuizAttemptStatus.IN_PROGRESS) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài làm đã kết thúc");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        if (!now.isBefore(attempt.getExpiresAt())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài làm đã hết thời gian");
+        }
+    }
+
+    private QuizAttemptResponse attemptResponse(QuizSubmissionEntity attempt) {
+        return new QuizAttemptResponse(attempt.getId(), attempt.getExam().getId(), attempt.getStudent().getId(),
+                attempt.getStatus(), attempt.getStartedAt(), attempt.getExpiresAt(),
+                attempt.getSubmittedAt(), LocalDateTime.now());
+    }
+
+    private QuizResultResponse resultResponse(QuizSubmissionEntity attempt) {
+        List<QuizSubmissionAnswerEntity> answers =
+                answerRepository.findBySubmissionIdOrderById(attempt.getId());
+        return new QuizResultResponse(attempt.getId(), attempt.getExam().getId(), attempt.getStudent().getId(),
+                attempt.getStatus(), attempt.getStartedAt(), attempt.getExpiresAt(),
+                attempt.getScore(), attempt.getTotalPoints(), attempt.getSubmittedAt(),
+                answers.stream().map(answer -> new QuizAnswerResultResponse(answer.getQuestion().getId(),
+                        answer.getSelectedOption().getId(), answer.isCorrect(),
+                        answer.getAwardedPoints())).toList());
     }
 
     private ResponseStatusException invalid(String message) {

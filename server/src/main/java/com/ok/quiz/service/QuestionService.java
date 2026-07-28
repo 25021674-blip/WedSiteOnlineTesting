@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class QuestionService {
     private final QuestionRepository repository;
     private final ExamService examService;
+    private final QuizSubmissionService submissionService;
 
     @Transactional
     public QuestionManagementResponse create(Long examId, CreateQuestionRequest request, String email) {
@@ -68,6 +69,7 @@ public class QuestionService {
         UserEntity user = examService.currentUser(email);
         if (user.getRole() != Role.STUDENT) throw forbidden("Chỉ học sinh sử dụng nội dung đề này");
         requireQuiz(exam);
+        submissionService.requireActiveAttempt(examId, user);
         LocalDateTime now = LocalDateTime.now();
         if (exam.getStatus() != ExamStatus.PUBLISHED || now.isBefore(exam.getStartTime()) || now.isAfter(exam.getDeadline())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài kiểm tra chưa mở hoặc đã kết thúc");

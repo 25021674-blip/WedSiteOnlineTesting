@@ -38,6 +38,7 @@ public class ExamService {
     @Transactional
     public ExamResponse createExam(CreateExamRequest request, String email) {
         validateTime(request.startTime(), request.deadline());
+        validateDuration(request.type(), request.durationMinutes());
         UserEntity creator = currentUser(email);
         requireTeacher(creator);
         ExamEntity exam = new ExamEntity(request.title().trim(), normalize(request.description()),
@@ -73,6 +74,7 @@ public class ExamService {
         ExamEntity exam = findExam(id);
         requireOwnerOrAdmin(exam, currentUser(email));
         requireDraft(exam);
+        validateDuration(exam.getType(), request.durationMinutes());
         exam.update(request.title().trim(), normalize(request.description()), request.startTime(),
                 request.deadline(), request.durationMinutes());
         return toResponse(exam);
@@ -138,6 +140,17 @@ public class ExamService {
     private void validateTime(java.time.LocalDateTime start, java.time.LocalDateTime deadline) {
         if (!deadline.isAfter(start)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Hạn nộp phải sau thời gian bắt đầu");
+        }
+    }
+
+    private void validateDuration(ExamType type, Integer durationMinutes) {
+        if (type == ExamType.MULTIPLE_CHOICE && (durationMinutes == null || durationMinutes <= 0)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Đề trắc nghiệm phải có thời lượng làm bài lớn hơn 0");
+        }
+        if (type == ExamType.ESSAY && durationMinutes != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Thời lượng riêng chỉ áp dụng cho đề trắc nghiệm");
         }
     }
 

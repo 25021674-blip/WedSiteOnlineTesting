@@ -1,6 +1,7 @@
 package com.ok.quiz.entity;
 
 import java.time.LocalDateTime;
+import com.ok.dto.QuizAttemptStatus;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.UserEntity;
 import jakarta.persistence.*;
@@ -25,20 +26,45 @@ public class QuizSubmissionEntity {
     @JoinColumn(name = "student_id", nullable = false)
     private UserEntity student;
 
-    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private QuizAttemptStatus status;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime startedAt;
+
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime expiresAt;
+
     private Double score;
 
-    @Column(nullable = false)
     private Double totalPoints;
 
-    @Column(nullable = false)
     private LocalDateTime submittedAt;
 
-    public QuizSubmissionEntity(ExamEntity exam, UserEntity student, double score, double totalPoints) {
+    @Version
+    private Long version;
+
+    public QuizSubmissionEntity(ExamEntity exam, UserEntity student,
+            LocalDateTime startedAt, LocalDateTime expiresAt) {
         this.exam = exam;
         this.student = student;
+        this.status = QuizAttemptStatus.IN_PROGRESS;
+        this.startedAt = startedAt;
+        this.expiresAt = expiresAt;
+    }
+
+    public void submit(double score, double totalPoints, LocalDateTime submittedAt) {
+        this.status = QuizAttemptStatus.SUBMITTED;
         this.score = score;
         this.totalPoints = totalPoints;
-        this.submittedAt = LocalDateTime.now();
+        this.submittedAt = submittedAt;
+    }
+
+    public void autoSubmit(double score, double totalPoints) {
+        this.status = QuizAttemptStatus.AUTO_SUBMITTED;
+        this.score = score;
+        this.totalPoints = totalPoints;
+        this.submittedAt = expiresAt;
     }
 }

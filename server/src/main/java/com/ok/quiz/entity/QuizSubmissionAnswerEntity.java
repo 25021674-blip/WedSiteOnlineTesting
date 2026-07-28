@@ -7,7 +7,9 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @Entity
-@Table(name = "quiz_submission_answers")
+@Table(name = "quiz_submission_answers", uniqueConstraints = @UniqueConstraint(
+        columnNames = {"submission_id", "question_id"}
+))
 public class QuizSubmissionAnswerEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -34,6 +36,10 @@ public class QuizSubmissionAnswerEntity {
             AnswerOptionEntity selectedOption, boolean correct, double awardedPoints) {
         this.submission = submission;
         this.question = question;
+        select(selectedOption, correct, awardedPoints);
+    }
+
+    public void select(AnswerOptionEntity selectedOption, boolean correct, double awardedPoints) {
         this.selectedOption = selectedOption;
         this.correct = correct;
         this.awardedPoints = awardedPoints;
