@@ -13,6 +13,7 @@ const icons = {
     exam: `<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h6"/></svg>`,
     score: `<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="m8.5 12-1.2 9 4.7-2.8 4.7 2.8-1.2-9"/></svg>`,
     logout: `<svg viewBox="0 0 24 24"><path d="M10 17l5-5-5-5M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>`,
+    chevron: `<svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>`,
     menu: `<svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`,
     close: `<svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg>`,
     check: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>`,
@@ -29,7 +30,8 @@ const icons = {
 const pageConfig = {
     home: { title: "Trang chủ" },
     exams: { title: "Bài kiểm tra" },
-    scores: { title: "Điểm của tôi" }
+    scores: { title: "Điểm của tôi" },
+    account: { title: "Tài khoản" }
 };
 
 const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
@@ -51,6 +53,7 @@ const state = {
 
 const scene = document.querySelector("#scene");
 const sidebar = document.querySelector("#sidebar");
+const sidebarToggle = document.querySelector("#sidebar-toggle");
 const backdrop = document.querySelector("#sidebar-backdrop");
 const dialog = document.querySelector("#exam-dialog");
 let toastTimer;
@@ -78,11 +81,13 @@ function getIdentity() {
     const claims = readJwtPayload();
     const email = stored.email || claims.sub || "";
     const name = stored.fullName || stored.name || (email ? email.split("@")[0] : "Học sinh");
+    const id = stored.userId || stored.id || "";
+    const role = stored.role || claims.role || "STUDENT";
     const words = name.trim().split(/\s+/).filter(Boolean);
     const initials = words.length
         ? `${words[0][0] || ""}${words.length > 1 ? words.at(-1)[0] : words[0][1] || ""}`.toUpperCase()
         : "HS";
-    return { name, email, initials };
+    return { id, name, email, initials, role };
 }
 
 function applyIdentity() {
@@ -404,17 +409,74 @@ function scoresScene() {
     `;
 }
 
+function accountScene() {
+    const user = getIdentity();
+    const signedIn = Boolean(getAuthToken());
+    const roleLabel = user.role === "STUDENT" ? "Học sinh" : user.role || "Học sinh";
+
+    return `
+        <div class="page-toolbar">
+            <div>
+                <h2>Thông tin cá nhân</h2>
+                <p>Thông tin được lấy từ tài khoản đang đăng nhập</p>
+            </div>
+        </div>
+        <div class="account-layout">
+            <aside class="account-summary">
+                <span class="avatar account-avatar">${escapeHtml(user.initials)}</span>
+                <h2>${escapeHtml(user.name)}</h2>
+                <p>${escapeHtml(user.email || "Chưa có email đăng nhập")}</p>
+                <span class="account-role">${escapeHtml(roleLabel)}</span>
+            </aside>
+
+            <section class="account-information">
+                <div class="account-information__header">
+                    <h2>Chi tiết tài khoản</h2>
+                    <p>Các dữ liệu hiện có trong hệ thống</p>
+                </div>
+                <div class="account-fields">
+                    <div class="account-field">
+                        <small>Họ và tên</small>
+                        <strong>${escapeHtml(user.name)}</strong>
+                    </div>
+                    <div class="account-field">
+                        <small>Email</small>
+                        <strong>${escapeHtml(user.email || "Chưa cập nhật")}</strong>
+                    </div>
+                    <div class="account-field">
+                        <small>Mã người dùng</small>
+                        <strong>${escapeHtml(user.id || "Chưa cập nhật")}</strong>
+                    </div>
+                    <div class="account-field">
+                        <small>Vai trò</small>
+                        <strong>${escapeHtml(roleLabel)}</strong>
+                    </div>
+                    <div class="account-field">
+                        <small>Trạng thái phiên</small>
+                        <strong>${signedIn ? "Đang đăng nhập" : "Chưa đăng nhập"}</strong>
+                    </div>
+                </div>
+                <p class="account-note">Trang này hiện chỉ hiển thị thông tin. Khi backend có API cập nhật hồ sơ, có thể bổ sung chức năng sửa họ tên, ảnh đại diện và các thông tin cá nhân khác.</p>
+            </section>
+        </div>
+    `;
+}
+
 function render() {
     const route = getRoute();
     document.querySelector("#page-title").textContent = pageConfig[route].title;
     document.title = `${pageConfig[route].title} — EduPortal`;
     document.querySelectorAll("[data-route]").forEach(link => {
-        link.classList.toggle("is-active", link.dataset.route === route);
+        const isActive = link.dataset.route === route;
+        link.classList.toggle("is-active", isActive);
+        if (isActive) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
     });
 
-    scene.innerHTML = route === "home"
-        ? homeScene()
-        : route === "exams" ? examsScene() : scoresScene();
+    if (route === "home") scene.innerHTML = homeScene();
+    else if (route === "exams") scene.innerHTML = examsScene();
+    else if (route === "scores") scene.innerHTML = scoresScene();
+    else scene.innerHTML = accountScene();
     bindSceneEvents();
     closeMobileMenu();
 }
@@ -527,7 +589,19 @@ function closeMobileMenu() {
     document.body.style.overflow = "";
 }
 
+function setSidebarPinned(pinned) {
+    sidebar.classList.toggle("is-pinned", pinned);
+    sidebarToggle.setAttribute("aria-expanded", String(pinned));
+    sidebarToggle.setAttribute("aria-label", pinned ? "Thu gọn sidebar" : "Giữ sidebar mở rộng");
+    sidebarToggle.title = pinned ? "Thu gọn sidebar" : "Giữ sidebar mở rộng";
+    localStorage.setItem("sidebarPinned", String(pinned));
+}
+
 document.querySelector("#mobile-menu").addEventListener("click", openMobileMenu);
+sidebarToggle.addEventListener("click", () => {
+    setSidebarPinned(!sidebar.classList.contains("is-pinned"));
+    sidebarToggle.blur();
+});
 backdrop.addEventListener("click", closeMobileMenu);
 document.querySelector("#dialog-close").addEventListener("click", () => dialog.close());
 dialog.addEventListener("click", event => {
@@ -551,6 +625,8 @@ window.addEventListener("resize", () => {
 document.querySelectorAll("[data-icon]").forEach(element => {
     element.innerHTML = icon(element.dataset.icon);
 });
+
+setSidebarPinned(localStorage.getItem("sidebarPinned") === "true");
 
 if (!window.location.hash || !pageConfig[window.location.hash.slice(1)]) {
     window.location.hash = "home";

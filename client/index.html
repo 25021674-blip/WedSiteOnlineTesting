@@ -15,11 +15,16 @@
         <aside class="sidebar" id="sidebar" aria-label="Điều hướng học sinh">
             <a class="brand" href="#home" aria-label="Về trang chủ EduPortal">
                 <span class="brand__mark" aria-hidden="true">E</span>
-                <span>
+                <span class="brand__copy">
                     <strong>EduPortal</strong>
                     <small>Không gian học sinh</small>
                 </span>
             </a>
+
+            <button class="sidebar-toggle" id="sidebar-toggle" type="button"
+                    aria-label="Giữ sidebar mở rộng" aria-expanded="false" title="Giữ sidebar mở rộng">
+                <span data-icon="chevron"></span>
+            </button>
 
             <div class="student-profile">
                 <span class="avatar" id="sidebar-avatar">HS</span>
@@ -32,22 +37,26 @@
             <nav class="sidebar-nav" aria-label="Các trang">
                 <a class="nav-item" href="#home" data-route="home">
                     <span class="nav-item__icon" data-icon="home"></span>
-                    <span>Trang chủ</span>
+                    <span class="nav-item__label">Trang chủ</span>
                 </a>
                 <a class="nav-item" href="#exams" data-route="exams">
                     <span class="nav-item__icon" data-icon="exam"></span>
-                    <span>Bài kiểm tra</span>
+                    <span class="nav-item__label">Bài kiểm tra</span>
                 </a>
                 <a class="nav-item" href="#scores" data-route="scores">
                     <span class="nav-item__icon" data-icon="score"></span>
-                    <span>Điểm của tôi</span>
+                    <span class="nav-item__label">Điểm của tôi</span>
                 </a>
             </nav>
 
             <div class="sidebar__footer">
+                <a class="nav-item" href="#account" data-route="account">
+                    <span class="nav-item__icon" data-icon="user"></span>
+                    <span class="nav-item__label">Tài khoản</span>
+                </a>
                 <button class="nav-item nav-item--button" id="logout-button" type="button">
                     <span class="nav-item__icon" data-icon="logout"></span>
-                    <span>Đăng xuất</span>
+                    <span class="nav-item__label">Đăng xuất</span>
                 </button>
             </div>
         </aside>
@@ -66,13 +75,13 @@
                     </div>
                 </div>
 
-                <div class="topbar__profile">
+                <a class="topbar__profile" href="#account" data-route="account" aria-label="Xem thông tin tài khoản">
                     <span class="avatar avatar--small" id="topbar-avatar">HS</span>
                     <span>
                         <strong id="topbar-name">Học sinh</strong>
                         <small>Học sinh</small>
                     </span>
-                </div>
+                </a>
             </header>
 
             <section class="scene" id="scene" aria-live="polite"></section>

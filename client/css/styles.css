@@ -1,5 +1,6 @@
 :root {
-    --sidebar-width: 264px;
+    --sidebar-collapsed: 78px;
+    --sidebar-expanded: 264px;
     --ink: #17182e;
     --muted: #737b91;
     --line: #e8eaf1;
@@ -28,6 +29,7 @@ html {
 body {
     min-width: 320px;
     margin: 0;
+    overflow-x: hidden;
     color: var(--ink);
     background:
         radial-gradient(circle at 80% 0, rgb(109 66 223 / 7%), transparent 28rem),
@@ -68,13 +70,20 @@ select:focus-visible {
     z-index: 50;
     inset: 0 auto 0 0;
     display: flex;
-    width: var(--sidebar-width);
+    width: var(--sidebar-collapsed);
     flex-direction: column;
     color: #fff;
     background:
         radial-gradient(circle at 20% 5%, rgb(135 103 255 / 22%), transparent 13rem),
         var(--navy);
     box-shadow: 12px 0 38px rgb(24 20 67 / 14%);
+    transition: width 210ms ease, box-shadow 210ms ease;
+}
+
+.sidebar:hover,
+.sidebar.is-pinned {
+    width: var(--sidebar-expanded);
+    box-shadow: 18px 0 44px rgb(24 20 67 / 24%);
 }
 
 .brand {
@@ -82,7 +91,7 @@ select:focus-visible {
     min-height: 90px;
     align-items: center;
     gap: 13px;
-    padding: 0 24px;
+    padding: 0 17px;
     border-bottom: 1px solid rgb(255 255 255 / 9%);
     text-decoration: none;
 }
@@ -91,12 +100,32 @@ select:focus-visible {
     display: grid;
     width: 44px;
     height: 44px;
+    flex: 0 0 44px;
     place-items: center;
     border-radius: 14px;
     background: linear-gradient(135deg, #5d8cff, #a647e8);
     box-shadow: 0 10px 22px rgb(104 73 230 / 35%);
     font-size: 22px;
     font-weight: 800;
+}
+
+.brand__copy,
+.student-profile__copy,
+.nav-item__label {
+    min-width: 0;
+    max-width: 0;
+    overflow: hidden;
+    opacity: 0;
+    white-space: nowrap;
+    transform: translateX(-7px);
+    transition: max-width 210ms ease, opacity 130ms ease, transform 180ms ease;
+}
+
+.sidebar:hover :is(.brand__copy, .student-profile__copy, .nav-item__label),
+.sidebar.is-pinned :is(.brand__copy, .student-profile__copy, .nav-item__label) {
+    max-width: 190px;
+    opacity: 1;
+    transform: translateX(0);
 }
 
 .brand strong,
@@ -119,7 +148,7 @@ select:focus-visible {
     min-height: 104px;
     align-items: center;
     gap: 12px;
-    padding: 0 24px;
+    padding: 0 17px;
     border-bottom: 1px solid rgb(255 255 255 / 8%);
     background: rgb(255 255 255 / 3%);
 }
@@ -137,10 +166,6 @@ select:focus-visible {
     box-shadow: 0 8px 18px rgb(0 0 0 / 16%);
     font-size: 12px;
     font-weight: 800;
-}
-
-.student-profile__copy {
-    min-width: 0;
 }
 
 .student-profile strong,
@@ -164,17 +189,26 @@ select:focus-visible {
 
 .sidebar-nav {
     flex: 1;
-    padding: 25px 14px;
+    padding: 25px 11px;
 }
 
 .sidebar-nav::before {
     display: block;
+    width: 210px;
     margin: 0 12px 12px;
     color: #77739d;
     content: "DÀNH CHO HỌC SINH";
     font-size: 9px;
     font-weight: 700;
     letter-spacing: .14em;
+    opacity: 0;
+    white-space: nowrap;
+    transition: opacity 140ms ease;
+}
+
+.sidebar:hover .sidebar-nav::before,
+.sidebar.is-pinned .sidebar-nav::before {
+    opacity: 1;
 }
 
 .nav-item {
@@ -207,6 +241,7 @@ select:focus-visible {
 
 .nav-item__icon {
     display: grid;
+    flex: 0 0 23px;
     width: 23px;
     place-items: center;
 }
@@ -219,7 +254,8 @@ select:focus-visible {
 .button svg,
 .exam-meta svg,
 .search-box svg,
-.dialog-close svg {
+.dialog-close svg,
+.sidebar-toggle svg {
     width: 20px;
     height: 20px;
     fill: none;
@@ -230,12 +266,41 @@ select:focus-visible {
 }
 
 .sidebar__footer {
-    padding: 15px 14px 22px;
+    padding: 15px 11px 22px;
     border-top: 1px solid rgb(255 255 255 / 9%);
 }
 
 .nav-item--button {
     border: 1px solid rgb(255 255 255 / 14%);
+}
+
+.sidebar-toggle {
+    position: absolute;
+    z-index: 2;
+    top: 74px;
+    right: -14px;
+    display: grid;
+    width: 29px;
+    height: 29px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid #dedfec;
+    border-radius: 50%;
+    color: #5d6680;
+    background: #fff;
+    box-shadow: 0 7px 18px rgb(26 22 68 / 18%);
+    cursor: pointer;
+}
+
+.sidebar-toggle svg {
+    width: 15px;
+    height: 15px;
+    transition: transform 180ms ease;
+}
+
+.sidebar:hover .sidebar-toggle svg,
+.sidebar.is-pinned .sidebar-toggle svg {
+    transform: rotate(180deg);
 }
 
 .sidebar-backdrop {
@@ -244,7 +309,8 @@ select:focus-visible {
 
 .main {
     min-height: 100vh;
-    margin-left: var(--sidebar-width);
+    min-width: 0;
+    margin-left: var(--sidebar-collapsed);
 }
 
 .topbar {
@@ -288,6 +354,16 @@ select:focus-visible {
 
 .topbar__profile {
     gap: 10px;
+    min-width: 0;
+    padding: 5px 8px;
+    border-radius: 12px;
+    text-decoration: none;
+    transition: background 160ms ease;
+}
+
+.topbar__profile:hover,
+.topbar__profile.is-active {
+    background: #eeeff7;
 }
 
 .topbar__profile strong,
@@ -332,6 +408,7 @@ select:focus-visible {
 
 .scene {
     width: min(1420px, 100%);
+    min-width: 0;
     margin: 0 auto;
     padding: clamp(22px, 3.2vw, 44px);
 }
@@ -885,6 +962,118 @@ select:focus-visible {
     font-size: 9px;
 }
 
+.account-layout {
+    display: grid;
+    grid-template-columns: minmax(250px, 320px) minmax(0, 1fr);
+    gap: 22px;
+}
+
+.account-summary,
+.account-information {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.account-summary {
+    padding: 30px 22px;
+    text-align: center;
+}
+
+.account-avatar {
+    width: 88px;
+    height: 88px;
+    margin: 0 auto 17px;
+    border-width: 4px;
+    font-size: 22px;
+}
+
+.account-summary h2 {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-size: 20px;
+}
+
+.account-summary > p {
+    margin: 7px 0 16px;
+    overflow-wrap: anywhere;
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+.account-role {
+    display: inline-flex;
+    padding: 6px 11px;
+    border-radius: 7px;
+    color: #5f42b3;
+    background: #eeeaff;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.account-information__header {
+    padding: 21px 23px;
+    border-bottom: 1px solid var(--line);
+}
+
+.account-information__header h2 {
+    margin: 0 0 5px;
+    font-size: 18px;
+}
+
+.account-information__header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 10px;
+}
+
+.account-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 13px;
+    padding: 22px 23px;
+}
+
+.account-field {
+    min-width: 0;
+    padding: 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #fafbfe;
+}
+
+.account-field small,
+.account-field strong {
+    display: block;
+}
+
+.account-field small {
+    margin-bottom: 6px;
+    color: var(--muted);
+    font-size: 9px;
+}
+
+.account-field strong {
+    overflow-wrap: anywhere;
+    font-size: 12px;
+    line-height: 1.55;
+}
+
+.account-note {
+    margin: 0 23px 23px;
+    padding: 13px 15px;
+    border-radius: 11px;
+    color: #675c8c;
+    background: #f2efff;
+    font-size: 10px;
+    line-height: 1.65;
+}
+
 .empty-state,
 .message-state {
     padding: clamp(34px, 6vw, 64px) 24px;
@@ -1092,13 +1281,31 @@ select:focus-visible {
 }
 
 @media (max-width: 900px) {
-    .sidebar {
+    .sidebar,
+    .sidebar:hover,
+    .sidebar.is-pinned {
+        width: min(286px, calc(100vw - 44px));
         transform: translateX(-105%);
+        box-shadow: 18px 0 44px rgb(24 20 67 / 24%);
         transition: transform 210ms ease;
     }
 
     .sidebar.is-open {
         transform: translateX(0);
+    }
+
+    .sidebar :is(.brand__copy, .student-profile__copy, .nav-item__label) {
+        max-width: 190px;
+        opacity: 1;
+        transform: translateX(0);
+    }
+
+    .sidebar .sidebar-nav::before {
+        opacity: 1;
+    }
+
+    .sidebar-toggle {
+        display: none;
     }
 
     .sidebar-backdrop {
@@ -1139,6 +1346,10 @@ select:focus-visible {
     .content-grid {
         grid-template-columns: 1fr;
     }
+
+    .account-layout {
+        grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+    }
 }
 
 @media (max-width: 680px) {
@@ -1158,6 +1369,10 @@ select:focus-visible {
     .stats-grid,
     .exam-grid,
     .loading-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .account-layout {
         grid-template-columns: 1fr;
     }
 
@@ -1188,6 +1403,51 @@ select:focus-visible {
 
     .dialog-body {
         padding: 25px 20px;
+    }
+}
+
+@media (max-width: 600px) {
+    .account-fields {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .topbar {
+        min-height: 72px;
+        padding: 11px 14px;
+    }
+
+    .topbar__profile {
+        padding: 3px;
+    }
+
+    .hero h2 {
+        font-size: 25px;
+    }
+
+    .exam-card__footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .exam-card__footer .button {
+        width: 100%;
+    }
+
+    .account-fields { padding: 18px; }
+
+    .account-information__header {
+        padding: 19px 18px;
+    }
+
+    .account-note {
+        margin: 0 18px 18px;
+    }
+
+    .toast {
+        right: 16px;
+        bottom: 16px;
     }
 }
 
