@@ -90,6 +90,25 @@ public class ExamAttemptEntity {
         }
     }
 
+    public void recordHeartbeat(Instant heartbeatAt) {
+        Instant newHeartbeatAt = Objects.requireNonNull(heartbeatAt);
+
+        if (lastHeartbeatAt == null
+                || newHeartbeatAt.isAfter(lastHeartbeatAt)) {
+            this.lastHeartbeatAt = newHeartbeatAt;
+        }
+    }
+
+    public int recordViolation(Instant activityAt) {
+        int currentCount = screenExitCount == null
+                ? 0
+                : screenExitCount;
+
+        this.screenExitCount = currentCount + 1;
+        recordActivity(activityAt);
+        return this.screenExitCount;
+    }
+
     public void autoSubmit(Instant submittedAt) {
         if (status != ExamAttemptStatus.IN_PROGRESS) {
             return;
