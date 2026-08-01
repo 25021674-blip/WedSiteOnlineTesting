@@ -15,11 +15,9 @@ import com.ok.dto.request.student.RecordAttemptViolationRequest;
 import com.ok.dto.request.student.SaveStudentAnswerRequest;
 import com.ok.dto.response.student.AttemptViolationResponse;
 import com.ok.dto.response.student.SaveStudentAnswerResponse;
-import com.ok.dto.response.student.StudentExamScreenResponse;
 import com.ok.dto.response.student.StudentExamWebSocketErrorResponse;
 import com.ok.dto.response.student.StudentHeartbeatResponse;
 import com.ok.exam.student.service.StudentAnswerSaveService;
-import com.ok.exam.student.service.StudentExamAttemptService;
 import com.ok.exam.student.service.StudentExamRealtimeService;
 
 import jakarta.validation.Valid;
@@ -33,7 +31,6 @@ public class StudentExamRealtimeController {
             "/queue/exam-attempts/";
 
     private final StudentAnswerSaveService answerSaveService;
-    private final StudentExamAttemptService attemptService;
     private final StudentExamRealtimeService realtimeService;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -60,28 +57,6 @@ public class StudentExamRealtimeController {
                 email,
                 attemptId,
                 "answers",
-                response
-        );
-    }
-
-    @MessageMapping(
-            "/student/exam-attempts/{attemptId}/sync"
-    )
-    public void synchronizeAttempt(
-            @DestinationVariable Long attemptId,
-            Principal principal
-    ) {
-        String email = getAuthenticatedEmail(principal);
-        StudentExamScreenResponse response =
-                attemptService.synchronizeAttempt(
-                        attemptId,
-                        email
-                );
-
-        sendToUser(
-                email,
-                attemptId,
-                "sync",
                 response
         );
     }

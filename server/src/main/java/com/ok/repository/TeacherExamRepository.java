@@ -1,6 +1,7 @@
 package com.ok.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -13,6 +14,7 @@ public interface TeacherExamRepository
 
     @Query("""
             SELECT
+                exam.id AS examId,
                 exam.title AS title,
                 COUNT(DISTINCT attempt.student.id) AS completedStudentCount
             FROM ExamEntity exam
@@ -24,6 +26,36 @@ public interface TeacherExamRepository
             ORDER BY exam.createdAt DESC
             """)
     List<TeacherExamSummaryView> findSummariesByTeacherId(
+            @Param("teacherId") Long teacherId
+    );
+
+    @Query("""
+            SELECT
+                exam.id AS examId,
+                exam.title AS title,
+                exam.type AS type,
+                COUNT(DISTINCT attempt.student.id) AS completedStudentCount,
+                exam.createdAt AS createdAt,
+                exam.expiresAt AS expiresAt,
+                exam.durationMinutes AS durationMinutes,
+                exam.maxScore AS maxScore
+            FROM ExamEntity exam
+            LEFT JOIN ExamAttemptEntity attempt
+                ON attempt.exam = exam
+                AND attempt.submittedAt IS NOT NULL
+            WHERE exam.id = :examId
+                AND exam.teacher.id = :teacherId
+            GROUP BY
+                exam.id,
+                exam.title,
+                exam.type,
+                exam.createdAt,
+                exam.expiresAt,
+                exam.durationMinutes,
+                exam.maxScore
+            """)
+    Optional<TeacherExamDetailViewDemo> findDetailByExamIdAndTeacherId(
+            @Param("examId") Long examId,
             @Param("teacherId") Long teacherId
     );
 }
