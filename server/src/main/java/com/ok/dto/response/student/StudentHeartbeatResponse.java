@@ -4,7 +4,7 @@ import java.time.Instant;
 
 import com.ok.domain.enums.ExamAttemptStatus;
 
-public record StudentHeartbeatResponseDemo(
+public record StudentHeartbeatResponse(
         Long attemptId,
         ExamAttemptStatus status,
         Instant serverTime,

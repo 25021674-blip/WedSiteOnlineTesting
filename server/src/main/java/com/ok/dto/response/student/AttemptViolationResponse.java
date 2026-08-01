@@ -4,7 +4,7 @@ import java.time.Instant;
 
 import com.ok.domain.enums.AttemptViolationType;
 
-public record AttemptViolationResponseDemo(
+public record AttemptViolationResponse(
         Long violationId,
         Long attemptId,
         AttemptViolationType type,

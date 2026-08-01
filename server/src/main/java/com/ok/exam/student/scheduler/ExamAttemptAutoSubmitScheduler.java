@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class ExamAttemptAutoSubmitSchedulerDemo {
+public class ExamAttemptAutoSubmitScheduler {
 
     private final StudentExamAttemptRepository attemptRepository;
 

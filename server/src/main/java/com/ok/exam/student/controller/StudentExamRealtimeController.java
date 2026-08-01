@@ -11,27 +11,30 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.ok.dto.request.student.RecordAttemptViolationRequestDemo;
+import com.ok.dto.request.student.RecordAttemptViolationRequest;
 import com.ok.dto.request.student.SaveStudentAnswerRequest;
-import com.ok.dto.response.student.AttemptViolationResponseDemo;
+import com.ok.dto.response.student.AttemptViolationResponse;
 import com.ok.dto.response.student.SaveStudentAnswerResponse;
-import com.ok.dto.response.student.StudentExamWebSocketErrorResponseDemo;
-import com.ok.dto.response.student.StudentHeartbeatResponseDemo;
+import com.ok.dto.response.student.StudentExamScreenResponse;
+import com.ok.dto.response.student.StudentExamWebSocketErrorResponse;
+import com.ok.dto.response.student.StudentHeartbeatResponse;
 import com.ok.exam.student.service.StudentAnswerSaveService;
-import com.ok.exam.student.service.StudentExamRealtimeServiceDemo;
+import com.ok.exam.student.service.StudentExamAttemptService;
+import com.ok.exam.student.service.StudentExamRealtimeService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor
-public class StudentExamRealtimeControllerDemo {
+public class StudentExamRealtimeController {
 
     private static final String QUEUE_PREFIX =
             "/queue/exam-attempts/";
 
     private final StudentAnswerSaveService answerSaveService;
-    private final StudentExamRealtimeServiceDemo realtimeService;
+    private final StudentExamAttemptService attemptService;
+    private final StudentExamRealtimeService realtimeService;
     private final SimpMessagingTemplate messagingTemplate;
 
     @MessageMapping(
@@ -62,6 +65,28 @@ public class StudentExamRealtimeControllerDemo {
     }
 
     @MessageMapping(
+            "/student/exam-attempts/{attemptId}/sync"
+    )
+    public void synchronizeAttempt(
+            @DestinationVariable Long attemptId,
+            Principal principal
+    ) {
+        String email = getAuthenticatedEmail(principal);
+        StudentExamScreenResponse response =
+                attemptService.synchronizeAttempt(
+                        attemptId,
+                        email
+                );
+
+        sendToUser(
+                email,
+                attemptId,
+                "sync",
+                response
+        );
+    }
+
+    @MessageMapping(
             "/student/exam-attempts/{attemptId}/heartbeat"
     )
     public void heartbeat(
@@ -69,7 +94,7 @@ public class StudentExamRealtimeControllerDemo {
             Principal principal
     ) {
         String email = getAuthenticatedEmail(principal);
-        StudentHeartbeatResponseDemo response =
+        StudentHeartbeatResponse response =
                 realtimeService.recordHeartbeat(
                         attemptId,
                         email
@@ -89,11 +114,11 @@ public class StudentExamRealtimeControllerDemo {
     public void recordViolation(
             @DestinationVariable Long attemptId,
             @Valid @Payload
-            RecordAttemptViolationRequestDemo request,
+            RecordAttemptViolationRequest request,
             Principal principal
     ) {
         String email = getAuthenticatedEmail(principal);
-        AttemptViolationResponseDemo response =
+        AttemptViolationResponse response =
                 realtimeService.recordViolation(
                         attemptId,
                         request,
@@ -121,7 +146,7 @@ public class StudentExamRealtimeControllerDemo {
         messagingTemplate.convertAndSendToUser(
                 email,
                 QUEUE_PREFIX + "errors",
-                new StudentExamWebSocketErrorResponseDemo(
+                new StudentExamWebSocketErrorResponse(
                         exception.getStatusCode().value(),
                         message,
                         Instant.now()

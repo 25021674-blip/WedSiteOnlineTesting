@@ -7,7 +7,7 @@ import com.ok.domain.enums.AttemptViolationType;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-public record RecordAttemptViolationRequestDemo(
+public record RecordAttemptViolationRequest(
         @NotNull(message = "Loại vi phạm không được để trống")
         AttemptViolationType type,
 

@@ -16,25 +16,25 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.ExamAttemptStatus;
 import com.ok.domain.enums.Role;
-import com.ok.dto.request.student.RecordAttemptViolationRequestDemo;
-import com.ok.dto.response.student.AttemptViolationResponseDemo;
-import com.ok.dto.response.student.StudentHeartbeatResponseDemo;
+import com.ok.dto.request.student.RecordAttemptViolationRequest;
+import com.ok.dto.response.student.AttemptViolationResponse;
+import com.ok.dto.response.student.StudentHeartbeatResponse;
 import com.ok.entity.AttemptViolationEntity;
 import com.ok.entity.ExamAttemptEntity;
-import com.ok.repository.AttemptViolationRepositoryDemo;
+import com.ok.repository.AttemptViolationRepository;
 import com.ok.repository.StudentExamAttemptRepository;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class StudentExamRealtimeServiceDemo {
+public class StudentExamRealtimeService {
 
     private final StudentExamAttemptRepository attemptRepository;
-    private final AttemptViolationRepositoryDemo violationRepository;
+    private final AttemptViolationRepository violationRepository;
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
-    public StudentHeartbeatResponseDemo recordHeartbeat(
+    public StudentHeartbeatResponse recordHeartbeat(
             Long attemptId,
             String authenticatedEmail
     ) {
@@ -60,7 +60,7 @@ public class StudentExamRealtimeServiceDemo {
                 ).toSeconds()
         );
 
-        return new StudentHeartbeatResponseDemo(
+        return new StudentHeartbeatResponse(
                 savedAttempt.getId(),
                 savedAttempt.getStatus(),
                 serverTime,
@@ -70,9 +70,9 @@ public class StudentExamRealtimeServiceDemo {
     }
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
-    public AttemptViolationResponseDemo recordViolation(
+    public AttemptViolationResponse recordViolation(
             Long attemptId,
-            RecordAttemptViolationRequestDemo request,
+            RecordAttemptViolationRequest request,
             String authenticatedEmail
     ) {
         validateIdentity(attemptId, authenticatedEmail);
@@ -97,7 +97,7 @@ public class StudentExamRealtimeServiceDemo {
         AttemptViolationEntity savedViolation =
                 violationRepository.saveAndFlush(violation);
 
-        return new AttemptViolationResponseDemo(
+        return new AttemptViolationResponse(
                 savedViolation.getId(),
                 attempt.getId(),
                 savedViolation.getType(),
@@ -127,7 +127,7 @@ public class StudentExamRealtimeServiceDemo {
     }
 
     private void validateViolationRequest(
-            RecordAttemptViolationRequestDemo request
+            RecordAttemptViolationRequest request
     ) {
         if (request == null
                 || request.type() == null

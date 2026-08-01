@@ -7,16 +7,16 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer;
 
-import com.ok.websocket.security.StompJwtChannelInterceptorDemo;
+import com.ok.websocket.security.StompJwtChannelInterceptor;
 
 import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
 @EnableWebSocketMessageBroker
-public class WebSocketConfigDemo implements WebSocketMessageBrokerConfigurer {
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
-    private final StompJwtChannelInterceptorDemo jwtChannelInterceptor;
+    private final StompJwtChannelInterceptor jwtChannelInterceptor;
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {

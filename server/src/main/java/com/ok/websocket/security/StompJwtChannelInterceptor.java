@@ -18,7 +18,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
-public class StompJwtChannelInterceptorDemo
+public class StompJwtChannelInterceptor
         implements ChannelInterceptor {
 
     private static final String BEARER_PREFIX = "Bearer ";

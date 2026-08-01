@@ -132,6 +132,60 @@ public class StudentExamAttemptService {
         );
     }
 
+    @Transactional(noRollbackFor = ResponseStatusException.class)
+    public StudentExamScreenResponse synchronizeAttempt(
+            Long attemptId,
+            String authenticatedEmail
+    ) {
+        validateSynchronizationRequest(
+                attemptId,
+                authenticatedEmail
+        );
+
+        Instant serverTime = Instant.now();
+        ExamAttemptEntity attempt = attemptRepository
+                .findOwnedByIdForUpdate(
+                        attemptId,
+                        authenticatedEmail
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        NOT_FOUND,
+                        "Không tìm thấy lượt làm bài"
+                ));
+
+        if (attempt.getStudent().getRole() != Role.STUDENT) {
+            throw new ResponseStatusException(
+                    FORBIDDEN,
+                    "Chỉ học sinh được đồng bộ lượt làm bài"
+            );
+        }
+
+        ExamEntity exam = attempt.getExam();
+        Instant effectiveDeadline = attempt.getDeadlineAt()
+                .isBefore(exam.getExpiresAt())
+                ? attempt.getDeadlineAt()
+                : exam.getExpiresAt();
+
+        if (attempt.getStatus() == ExamAttemptStatus.IN_PROGRESS
+                && !serverTime.isBefore(effectiveDeadline)) {
+            attempt.autoSubmit(serverTime);
+            attempt = attemptRepository.saveAndFlush(attempt);
+        }
+
+        List<QuestionEntity> questions = questionRepository
+                .findByExam_IdOrderByQuestionOrderAsc(exam.getId());
+        List<StudentAnswerEntity> answers = answerRepository
+                .findByAttempt_Id(attempt.getId());
+
+        return createScreenResponse(
+                exam,
+                attempt,
+                questions,
+                answers,
+                serverTime
+        );
+    }
+
     @Transactional
     public SubmitStudentExamResponse submitAttempt(
             Long examId,
@@ -196,6 +250,25 @@ public class StudentExamAttemptService {
             throw new ResponseStatusException(
                     BAD_REQUEST,
                     "Mã bài kiểm tra và lượt làm bài phải lớn hơn 0"
+            );
+        }
+    }
+
+    private void validateSynchronizationRequest(
+            Long attemptId,
+            String authenticatedEmail
+    ) {
+        if (authenticatedEmail == null || authenticatedEmail.isBlank()) {
+            throw new ResponseStatusException(
+                    UNAUTHORIZED,
+                    "Tài khoản chưa được xác thực"
+            );
+        }
+
+        if (attemptId == null || attemptId <= 0) {
+            throw new ResponseStatusException(
+                    BAD_REQUEST,
+                    "Mã lượt làm bài phải lớn hơn 0"
             );
         }
     }
