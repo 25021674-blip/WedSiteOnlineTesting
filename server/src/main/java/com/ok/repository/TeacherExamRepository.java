@@ -58,4 +58,20 @@ public interface TeacherExamRepository
             @Param("examId") Long examId,
             @Param("teacherId") Long teacherId
     );
+
+    @Query("""
+            SELECT
+                attempt.id AS attemptId,
+                attempt.student.id AS studentId,
+                attempt.student.fullName AS studentName
+            FROM ExamAttemptEntity attempt
+            WHERE attempt.exam.id = :examId
+                AND attempt.exam.teacher.id = :teacherId
+                AND attempt.submittedAt IS NOT NULL
+            ORDER BY attempt.student.fullName ASC, attempt.student.id ASC
+            """)
+    List<TeacherExamSubmissionViewDemo> findSubmissionsByExamIdAndTeacherId(
+            @Param("examId") Long examId,
+            @Param("teacherId") Long teacherId
+    );
 }

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ok.dto.response.teacher.TeacherExamDetailResponse;
+import com.ok.dto.response.teacher.TeacherExamSubmissionResponseDemo;
 import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
 import com.ok.exam.teacher.service.TeacherExamService;
 
@@ -34,6 +35,17 @@ public class TeacherExamController {
             Authentication authentication
     ) {
         return teacherExamService.getExamDetail(
+                examId,
+                authentication.getName()
+        );
+    }
+
+    @GetMapping("/{examId}/submissions")
+    public List<TeacherExamSubmissionResponseDemo> getExamSubmissions(
+            @PathVariable Long examId,
+            Authentication authentication
+    ) {
+        return teacherExamService.getExamSubmissions(
                 examId,
                 authentication.getName()
         );

@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.Role;
 import com.ok.dto.response.teacher.TeacherExamDetailResponse;
+import com.ok.dto.response.teacher.TeacherExamSubmissionResponseDemo;
 import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
 import com.ok.entity.UserEntity;
 import com.ok.repository.TeacherExamRepository;
@@ -93,5 +94,48 @@ public class TeacherExamService {
                         NOT_FOUND,
                         "Không tìm thấy bài kiểm tra"
                 ));
+    }
+
+    @Transactional(readOnly = true)
+    public List<TeacherExamSubmissionResponseDemo> getExamSubmissions(
+            Long examId,
+            String authenticatedEmail
+    ) {
+        UserEntity teacher = userRepository
+                .findByEmailIgnoreCase(authenticatedEmail)
+                .orElseThrow(() -> new ResponseStatusException(
+                        UNAUTHORIZED,
+                        "Tài khoản chưa được xác thực"
+                ));
+
+        if (teacher.getRole() != Role.TEACHER) {
+            throw new ResponseStatusException(
+                    FORBIDDEN,
+                    "Chỉ giáo viên được xem danh sách bài nộp"
+            );
+        }
+
+        teacherExamRepository
+                .findDetailByExamIdAndTeacherId(
+                        examId,
+                        teacher.getId()
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        NOT_FOUND,
+                        "Không tìm thấy bài kiểm tra"
+                ));
+
+        return teacherExamRepository
+                .findSubmissionsByExamIdAndTeacherId(
+                        examId,
+                        teacher.getId()
+                )
+                .stream()
+                .map(submission -> new TeacherExamSubmissionResponseDemo(
+                        submission.getAttemptId(),
+                        submission.getStudentId(),
+                        submission.getStudentName()
+                ))
+                .toList();
     }
 }
