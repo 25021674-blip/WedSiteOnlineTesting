@@ -5,7 +5,7 @@ import java.time.Instant;
 
 import com.ok.domain.enums.ExamType;
 
-public interface TeacherExamDetailViewDemo {
+public interface TeacherExamDetailView {
 
     Long getExamId();
 

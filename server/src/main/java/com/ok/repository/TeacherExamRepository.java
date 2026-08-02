@@ -54,7 +54,7 @@ public interface TeacherExamRepository
                 exam.durationMinutes,
                 exam.maxScore
             """)
-    Optional<TeacherExamDetailViewDemo> findDetailByExamIdAndTeacherId(
+    Optional<TeacherExamDetailView> findDetailByExamIdAndTeacherId(
             @Param("examId") Long examId,
             @Param("teacherId") Long teacherId
     );

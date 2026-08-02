@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ok.dto.response.teacher.TeacherExamDetailResponseDemo;
+import com.ok.dto.response.teacher.TeacherExamDetailResponse;
 import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
 import com.ok.exam.teacher.service.TeacherExamService;
 
@@ -29,7 +29,7 @@ public class TeacherExamController {
     }
 
     @GetMapping("/{examId}")
-    public TeacherExamDetailResponseDemo getExamDetail(
+    public TeacherExamDetailResponse getExamDetail(
             @PathVariable Long examId,
             Authentication authentication
     ) {

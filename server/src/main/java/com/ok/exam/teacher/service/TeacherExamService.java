@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.Role;
-import com.ok.dto.response.teacher.TeacherExamDetailResponseDemo;
+import com.ok.dto.response.teacher.TeacherExamDetailResponse;
 import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
 import com.ok.entity.UserEntity;
 import com.ok.repository.TeacherExamRepository;
@@ -56,7 +56,7 @@ public class TeacherExamService {
     }
 
     @Transactional(readOnly = true)
-    public TeacherExamDetailResponseDemo getExamDetail(
+    public TeacherExamDetailResponse getExamDetail(
             Long examId,
             String authenticatedEmail
     ) {
@@ -79,7 +79,7 @@ public class TeacherExamService {
                         examId,
                         teacher.getId()
                 )
-                .map(detail -> new TeacherExamDetailResponseDemo(
+                .map(detail -> new TeacherExamDetailResponse(
                         detail.getExamId(),
                         detail.getTitle(),
                         detail.getType(),

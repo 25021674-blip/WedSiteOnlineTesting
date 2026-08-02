@@ -5,7 +5,7 @@ import java.time.Instant;
 
 import com.ok.domain.enums.ExamType;
 
-public record TeacherExamDetailResponseDemo(
+public record TeacherExamDetailResponse(
         Long examId,
         String title,
         ExamType type,
