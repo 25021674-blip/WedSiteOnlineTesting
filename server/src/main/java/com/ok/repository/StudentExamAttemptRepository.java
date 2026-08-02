@@ -75,4 +75,19 @@ public interface StudentExamAttemptRepository
             @Param("newStatus") ExamAttemptStatus newStatus,
             @Param("serverTime") Instant serverTime
     );
+
+    @EntityGraph(attributePaths = {"exam", "student"})
+    @Query("""
+            SELECT attempt
+            FROM ExamAttemptEntity attempt
+            WHERE attempt.id = :attemptId
+              AND attempt.exam.id = :examId
+              AND attempt.exam.teacher.id = :teacherId
+              AND attempt.submittedAt IS NOT NULL
+            """)
+    Optional<ExamAttemptEntity> findSubmittedForTeacherReview(
+            @Param("examId") Long examId,
+            @Param("attemptId") Long attemptId,
+            @Param("teacherId") Long teacherId
+    );
 }

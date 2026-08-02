@@ -9,8 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ok.dto.response.teacher.TeacherExamDetailResponse;
-import com.ok.dto.response.teacher.TeacherExamSubmissionResponseDemo;
+import com.ok.dto.response.teacher.TeacherExamSubmissionResponse;
 import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
+import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponseDemo;
 import com.ok.exam.teacher.service.TeacherExamService;
 
 import lombok.AllArgsConstructor;
@@ -41,12 +42,25 @@ public class TeacherExamController {
     }
 
     @GetMapping("/{examId}/submissions")
-    public List<TeacherExamSubmissionResponseDemo> getExamSubmissions(
+    public List<TeacherExamSubmissionResponse> getExamSubmissions(
             @PathVariable Long examId,
             Authentication authentication
     ) {
         return teacherExamService.getExamSubmissions(
                 examId,
+                authentication.getName()
+        );
+    }
+
+    @GetMapping("/{examId}/attempts/{attemptId}")
+    public TeacherStudentAttemptDetailResponseDemo getStudentAttemptDetail(
+            @PathVariable Long examId,
+            @PathVariable Long attemptId,
+            Authentication authentication
+    ) {
+        return teacherExamService.getStudentAttemptDetail(
+                examId,
+                attemptId,
                 authentication.getName()
         );
     }

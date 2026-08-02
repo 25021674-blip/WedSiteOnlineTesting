@@ -70,7 +70,7 @@ public interface TeacherExamRepository
                 AND attempt.submittedAt IS NOT NULL
             ORDER BY attempt.student.fullName ASC, attempt.student.id ASC
             """)
-    List<TeacherExamSubmissionViewDemo> findSubmissionsByExamIdAndTeacherId(
+    List<TeacherExamSubmissionView> findSubmissionsByExamIdAndTeacherId(
             @Param("examId") Long examId,
             @Param("teacherId") Long teacherId
     );

@@ -7,7 +7,8 @@ build/
 .env
 application-local.properties
 AGENT.md
-
+ModifiedFile
+AuthApiBackendFlowDemo.txt
 ### STS ###
 .apt_generated
 .classpath

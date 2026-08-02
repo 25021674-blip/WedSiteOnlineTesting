@@ -1,6 +1,6 @@
 package com.ok.repository;
 
-public interface TeacherExamSubmissionViewDemo {
+public interface TeacherExamSubmissionView {
 
     Long getAttemptId();
 

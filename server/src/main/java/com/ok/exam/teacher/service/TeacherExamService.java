@@ -4,7 +4,9 @@ import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,9 +14,20 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.Role;
 import com.ok.dto.response.teacher.TeacherExamDetailResponse;
-import com.ok.dto.response.teacher.TeacherExamSubmissionResponseDemo;
+import com.ok.dto.response.teacher.TeacherExamSubmissionResponse;
 import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
+import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponseDemo;
+import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponseDemo.AnswerDetail;
+import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponseDemo.OptionDetail;
+import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponseDemo.QuestionDetail;
+import com.ok.entity.ExamAttemptEntity;
+import com.ok.entity.QuestionEntity;
+import com.ok.entity.QuestionOptionEntity;
+import com.ok.entity.StudentAnswerEntity;
 import com.ok.entity.UserEntity;
+import com.ok.repository.StudentAnswerRepository;
+import com.ok.repository.StudentExamAttemptRepository;
+import com.ok.repository.StudentQuestionRepository;
 import com.ok.repository.TeacherExamRepository;
 import com.ok.repository.UserRepository;
 
@@ -26,6 +39,9 @@ public class TeacherExamService {
 
     private final UserRepository userRepository;
     private final TeacherExamRepository teacherExamRepository;
+    private final StudentExamAttemptRepository studentExamAttemptRepository;
+    private final StudentQuestionRepository studentQuestionRepository;
+    private final StudentAnswerRepository studentAnswerRepository;
 
     @Transactional(readOnly = true)
     public List<TeacherExamSummaryResponse> getExamSummaries(
@@ -97,7 +113,7 @@ public class TeacherExamService {
     }
 
     @Transactional(readOnly = true)
-    public List<TeacherExamSubmissionResponseDemo> getExamSubmissions(
+    public List<TeacherExamSubmissionResponse> getExamSubmissions(
             Long examId,
             String authenticatedEmail
     ) {
@@ -131,11 +147,131 @@ public class TeacherExamService {
                         teacher.getId()
                 )
                 .stream()
-                .map(submission -> new TeacherExamSubmissionResponseDemo(
+                .map(submission -> new TeacherExamSubmissionResponse(
                         submission.getAttemptId(),
                         submission.getStudentId(),
                         submission.getStudentName()
                 ))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public TeacherStudentAttemptDetailResponseDemo getStudentAttemptDetail(
+            Long examId,
+            Long attemptId,
+            String authenticatedEmail
+    ) {
+        UserEntity teacher = userRepository
+                .findByEmailIgnoreCase(authenticatedEmail)
+                .orElseThrow(() -> new ResponseStatusException(
+                        UNAUTHORIZED,
+                        "Tài khoản chưa được xác thực"
+                ));
+
+        if (teacher.getRole() != Role.TEACHER) {
+            throw new ResponseStatusException(
+                    FORBIDDEN,
+                    "Chỉ giáo viên được xem bài làm của học sinh"
+            );
+        }
+
+        ExamAttemptEntity attempt = studentExamAttemptRepository
+                .findSubmittedForTeacherReview(
+                        examId,
+                        attemptId,
+                        teacher.getId()
+                )
+                .orElseThrow(() -> new ResponseStatusException(
+                        NOT_FOUND,
+                        "Không tìm thấy bài làm đã nộp"
+                ));
+
+        List<QuestionEntity> questions = studentQuestionRepository
+                .findByExam_IdOrderByQuestionOrderAsc(examId);
+        List<StudentAnswerEntity> answers = studentAnswerRepository
+                .findByAttempt_Id(attemptId);
+
+        Map<Long, StudentAnswerEntity> answerByQuestionId = new HashMap<>();
+        for (StudentAnswerEntity answer : answers) {
+            answerByQuestionId.put(
+                    answer.getQuestion().getId(),
+                    answer
+            );
+        }
+
+        List<QuestionDetail> questionDetails = questions
+                .stream()
+                .map(question -> createQuestionDetail(
+                        question,
+                        answerByQuestionId.get(question.getId())
+                ))
+                .toList();
+
+        int screenExitCount = attempt.getScreenExitCount() == null
+                ? 0
+                : attempt.getScreenExitCount();
+
+        return new TeacherStudentAttemptDetailResponseDemo(
+                attempt.getId(),
+                attempt.getExam().getTitle(),
+                attempt.getStudent().getId(),
+                attempt.getStudent().getFullName(),
+                attempt.getStartedAt(),
+                attempt.getSubmittedAt(),
+                screenExitCount,
+                attempt.getScore(),
+                attempt.getExam().getMaxScore(),
+                questionDetails
+        );
+    }
+
+    private QuestionDetail createQuestionDetail(
+            QuestionEntity question,
+            StudentAnswerEntity answer
+    ) {
+        List<OptionDetail> options = question.getOptions()
+                .stream()
+                .map(this::createOptionDetail)
+                .toList();
+
+        AnswerDetail answerDetail = answer == null
+                ? null
+                : createAnswerDetail(answer);
+
+        return new QuestionDetail(
+                question.getId(),
+                question.getQuestionOrder(),
+                question.getQuestionType(),
+                question.getContent(),
+                question.getMaxScore(),
+                options,
+                answerDetail
+        );
+    }
+
+    private OptionDetail createOptionDetail(
+            QuestionOptionEntity option
+    ) {
+        return new OptionDetail(
+                option.getId(),
+                option.getContent(),
+                option.isCorrect(),
+                option.getOptionOrder()
+        );
+    }
+
+    private AnswerDetail createAnswerDetail(
+            StudentAnswerEntity answer
+    ) {
+        Long selectedOptionId = answer.getSelectedOption() == null
+                ? null
+                : answer.getSelectedOption().getId();
+
+        return new AnswerDetail(
+                selectedOptionId,
+                answer.getEssayAnswer(),
+                answer.getScore(),
+                answer.getCorrect()
+        );
     }
 }
