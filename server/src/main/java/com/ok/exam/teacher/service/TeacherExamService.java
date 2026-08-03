@@ -16,10 +16,10 @@ import com.ok.domain.enums.Role;
 import com.ok.dto.response.teacher.TeacherExamDetailResponse;
 import com.ok.dto.response.teacher.TeacherExamSubmissionResponse;
 import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
-import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponseDemo;
-import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponseDemo.AnswerDetail;
-import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponseDemo.OptionDetail;
-import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponseDemo.QuestionDetail;
+import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponse;
+import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponse.AnswerDetail;
+import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponse.OptionDetail;
+import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponse.QuestionDetail;
 import com.ok.entity.ExamAttemptEntity;
 import com.ok.entity.QuestionEntity;
 import com.ok.entity.QuestionOptionEntity;
@@ -156,7 +156,7 @@ public class TeacherExamService {
     }
 
     @Transactional(readOnly = true)
-    public TeacherStudentAttemptDetailResponseDemo getStudentAttemptDetail(
+    public TeacherStudentAttemptDetailResponse getStudentAttemptDetail(
             Long examId,
             Long attemptId,
             String authenticatedEmail
@@ -211,7 +211,7 @@ public class TeacherExamService {
                 ? 0
                 : attempt.getScreenExitCount();
 
-        return new TeacherStudentAttemptDetailResponseDemo(
+        return new TeacherStudentAttemptDetailResponse(
                 attempt.getId(),
                 attempt.getExam().getTitle(),
                 attempt.getStudent().getId(),

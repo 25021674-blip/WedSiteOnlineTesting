@@ -6,7 +6,7 @@ import java.util.List;
 
 import com.ok.domain.enums.QuestionType;
 
-public record TeacherStudentAttemptDetailResponseDemo(
+public record TeacherStudentAttemptDetailResponse(
         Long attemptId,
         String examTitle,
         Long studentId,

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ok.dto.response.teacher.TeacherExamDetailResponse;
 import com.ok.dto.response.teacher.TeacherExamSubmissionResponse;
 import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
-import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponseDemo;
+import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponse;
 import com.ok.exam.teacher.service.TeacherExamService;
 
 import lombok.AllArgsConstructor;
@@ -53,7 +53,7 @@ public class TeacherExamController {
     }
 
     @GetMapping("/{examId}/attempts/{attemptId}")
-    public TeacherStudentAttemptDetailResponseDemo getStudentAttemptDetail(
+    public TeacherStudentAttemptDetailResponse getStudentAttemptDetail(
             @PathVariable Long examId,
             @PathVariable Long attemptId,
             Authentication authentication
