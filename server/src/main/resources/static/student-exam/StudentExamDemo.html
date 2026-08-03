@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Màn hình làm bài kiểm tra trực tuyến dành cho học sinh.">
+    <title>Làm bài kiểm tra | Online Testing</title>
+    <link rel="stylesheet" href="./StudentExamStyleDemo.css">
+</head>
+<body>
+<a class="skip-link" href="#question-panel">Đi tới câu hỏi hiện tại</a>
+
+<div id="loading-state" class="page-state" role="status" aria-live="polite">
+    <span class="loading-spinner" aria-hidden="true"></span>
+    <h1>Đang chuẩn bị bài kiểm tra</h1>
+    <p>Vui lòng chờ trong giây lát...</p>
+</div>
+
+<section id="error-state" class="page-state" role="alert" hidden>
+    <span class="state-icon state-icon--error" aria-hidden="true">!</span>
+    <h1>Không thể mở bài kiểm tra</h1>
+    <p id="error-message">Đã xảy ra lỗi. Vui lòng thử lại.</p>
+    <button id="retry-button" class="button button--primary" type="button">Thử lại</button>
+</section>
+
+<div id="exam-app" class="exam-app" hidden>
+    <header class="topbar">
+        <div class="topbar__content">
+            <a class="brand" href="#" aria-label="Online Testing">
+                <span class="brand__mark" aria-hidden="true">OT</span>
+                <span class="brand__name">Online Testing</span>
+            </a>
+
+            <span class="topbar__divider" aria-hidden="true"></span>
+
+            <div class="exam-heading">
+                <span id="preview-badge" class="preview-badge" hidden>Bản xem trước</span>
+                <p id="exam-type" class="exam-heading__type">Bài kiểm tra</p>
+                <h1 id="exam-title">Đang tải tên bài kiểm tra</h1>
+            </div>
+
+            <div class="topbar__actions">
+                <div id="save-status" class="save-status" role="status" aria-live="polite">
+                    <span class="save-status__dot" aria-hidden="true"></span>
+                    <span id="save-status-text">Đã lưu</span>
+                </div>
+
+                <div class="mobile-timer" aria-label="Thời gian còn lại">
+                    <span aria-hidden="true">◷</span>
+                    <span id="mobile-timer-value">00:00:00</span>
+                </div>
+
+                <div class="student-profile">
+                    <span id="student-avatar" class="student-profile__avatar" aria-hidden="true">HS</span>
+                    <span class="student-profile__text">
+                        <strong id="student-name">Học sinh</strong>
+                        <small>Đang làm bài</small>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="exam-shell">
+        <section id="question-panel" class="question-panel" aria-labelledby="question-title" tabindex="-1">
+            <header class="question-panel__header">
+                <div>
+                    <div class="question-label-row">
+                        <span id="question-position" class="question-position">Câu 1 / 10</span>
+                        <span id="question-type" class="question-type">Trắc nghiệm</span>
+                    </div>
+                    <p id="question-progress-text" class="question-progress-text">Tiến độ làm bài</p>
+                </div>
+
+                <button id="review-button" class="review-button" type="button" aria-pressed="false">
+                    <span class="review-button__icon" aria-hidden="true">☆</span>
+                    <span class="review-button__label">Đánh dấu xem lại</span>
+                </button>
+            </header>
+
+            <div class="question-panel__body">
+                <h2 id="question-title" class="question-title"></h2>
+
+                <form id="answer-form" class="answer-form" autocomplete="off">
+                    <fieldset id="choice-fieldset" class="choice-list">
+                        <legend class="visually-hidden">Chọn một phương án trả lời</legend>
+                        <div id="choice-options"></div>
+                    </fieldset>
+
+                    <div id="essay-field" class="essay-field" hidden>
+                        <label for="essay-answer">Câu trả lời của bạn</label>
+                        <textarea
+                                id="essay-answer"
+                                name="essayAnswer"
+                                rows="10"
+                                maxlength="10000"
+                                placeholder="Nhập câu trả lời tại đây..."
+                                aria-describedby="essay-hint essay-count"
+                        ></textarea>
+                        <div class="essay-field__footer">
+                            <span id="essay-hint">Nội dung được tự động lưu khi bạn nhập.</span>
+                            <span id="essay-count">0 / 10.000 ký tự</span>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <footer class="question-panel__footer">
+                <button id="previous-button" class="button button--secondary" type="button">
+                    <span aria-hidden="true">←</span>
+                    Câu trước
+                </button>
+
+                <p class="keyboard-hint">Dùng phím <kbd>←</kbd> <kbd>→</kbd> để chuyển câu</p>
+
+                <button id="next-button" class="button button--primary" type="button">
+                    Câu tiếp
+                    <span aria-hidden="true">→</span>
+                </button>
+            </footer>
+        </section>
+
+        <aside class="exam-sidebar" aria-label="Thông tin và điều khiển bài kiểm tra">
+            <section class="sidebar-card progress-card" aria-labelledby="progress-title">
+                <div class="sidebar-card__heading">
+                    <div>
+                        <p class="sidebar-eyebrow">Tiến độ</p>
+                        <h2 id="progress-title">Danh sách câu hỏi</h2>
+                    </div>
+                    <strong id="answered-ratio" class="answered-ratio">0/0</strong>
+                </div>
+
+                <div
+                        id="progress-bar"
+                        class="progress-bar"
+                        role="progressbar"
+                        aria-label="Số câu đã trả lời"
+                        aria-valuemin="0"
+                        aria-valuemax="0"
+                        aria-valuenow="0"
+                >
+                    <span id="progress-bar-value"></span>
+                </div>
+                <p id="answered-summary" class="answered-summary">Bạn chưa trả lời câu nào.</p>
+
+                <nav id="question-navigation" class="question-navigation" aria-label="Chuyển nhanh tới câu hỏi"></nav>
+
+                <div class="question-legend" aria-label="Chú thích trạng thái câu hỏi">
+                    <span><i class="legend-swatch legend-swatch--answered"></i>Đã làm</span>
+                    <span><i class="legend-swatch legend-swatch--empty"></i>Chưa làm</span>
+                    <span><i class="legend-swatch legend-swatch--review"></i>Xem lại</span>
+                </div>
+            </section>
+
+            <section id="timer-card" class="sidebar-card timer-card" aria-labelledby="timer-title">
+                <div class="timer-card__icon" aria-hidden="true">◷</div>
+                <div>
+                    <p id="timer-title" class="sidebar-eyebrow">Thời gian còn lại</p>
+                    <p id="timer-value" class="timer-value" role="timer" aria-live="off">00:00:00</p>
+                    <p id="deadline-text" class="timer-deadline">Bài sẽ tự nộp khi hết giờ</p>
+                </div>
+            </section>
+
+            <section class="sidebar-card violation-card" aria-labelledby="violation-title">
+                <div class="violation-card__top">
+                    <span class="violation-card__icon" aria-hidden="true">!</span>
+                    <div>
+                        <p class="sidebar-eyebrow">Giám sát bài thi</p>
+                        <h2 id="violation-title">Số lần rời màn hình</h2>
+                    </div>
+                    <strong id="screen-exit-count" class="screen-exit-count">0</strong>
+                </div>
+                <p>Hệ thống ghi nhận khi bạn chuyển tab hoặc thu nhỏ cửa sổ.</p>
+            </section>
+
+            <button id="submit-button" class="submit-button" type="button">
+                <span aria-hidden="true">✓</span>
+                Nộp bài
+            </button>
+            <p class="submit-note">Hãy kiểm tra kỹ các câu trả lời trước khi nộp.</p>
+        </aside>
+    </main>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden>
+    <span id="toast-icon" class="toast__icon" aria-hidden="true">✓</span>
+    <span id="toast-message"></span>
+</div>
+
+<dialog id="submit-dialog" class="modal">
+    <form method="dialog" class="modal__card">
+        <button class="modal__close" value="cancel" aria-label="Đóng hộp thoại" type="submit">×</button>
+        <span class="modal__icon" aria-hidden="true">✓</span>
+        <h2>Xác nhận nộp bài?</h2>
+        <p id="submit-dialog-summary">Bạn đã trả lời 0/0 câu.</p>
+        <div id="unanswered-warning" class="unanswered-warning" hidden>
+            <span aria-hidden="true">!</span>
+            <p id="unanswered-warning-text"></p>
+        </div>
+        <p class="modal__note">Sau khi nộp, bạn sẽ không thể thay đổi câu trả lời.</p>
+        <div class="modal__actions">
+            <button class="button button--secondary" value="cancel" type="submit">Tiếp tục làm bài</button>
+            <button id="confirm-submit-button" class="button button--danger" value="default" type="button">Nộp bài ngay</button>
+        </div>
+    </form>
+</dialog>
+
+<script src="./StudentExamScriptDemo.js" defer></script>
+</body>
+</html>

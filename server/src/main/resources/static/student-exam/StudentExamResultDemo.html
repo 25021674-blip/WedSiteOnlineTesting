@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Xác nhận học sinh đã hoàn thành bài kiểm tra trực tuyến.">
+    <title>Hoàn thành bài kiểm tra | Online Testing</title>
+    <link rel="stylesheet" href="./StudentExamResultStyleDemo.css">
+</head>
+<body>
+<main class="completion-page">
+    <section class="completion-card" aria-labelledby="completion-title">
+        <div class="completion-card__decoration completion-card__decoration--top" aria-hidden="true"></div>
+        <div class="completion-card__decoration completion-card__decoration--bottom" aria-hidden="true"></div>
+
+        <a id="brand-link" class="brand" href="/" aria-label="Online Testing - Trang chủ">
+            <span class="brand__mark" aria-hidden="true">OT</span>
+            <span>Online Testing</span>
+        </a>
+
+        <div class="completion-content">
+            <span id="preview-badge" class="preview-badge" hidden>Bản xem trước</span>
+
+            <div class="success-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" focusable="false">
+                    <path d="m7.2 12.1 3.1 3.1 6.7-7"></path>
+                </svg>
+            </div>
+
+            <p id="completion-eyebrow" class="completion-eyebrow">Hoàn tất bài kiểm tra</p>
+            <h1 id="completion-title" tabindex="-1">Bạn đã hoàn thành bài kiểm tra</h1>
+            <p id="exam-title" class="exam-title">Bài làm của bạn đã được hệ thống ghi nhận.</p>
+
+            <section id="result-panel" class="result-panel" aria-labelledby="result-status-title">
+                <div class="result-panel__heading">
+                    <span id="result-status-icon" class="result-status-icon" aria-hidden="true">✓</span>
+                    <div>
+                        <p class="result-panel__label">Trạng thái kết quả</p>
+                        <h2 id="result-status-title">Bài làm đã được ghi nhận</h2>
+                    </div>
+                </div>
+
+                <p id="result-message" class="result-message">
+                    Kết quả sẽ được cập nhật sau khi hệ thống hoàn tất xử lý bài làm.
+                </p>
+
+                <div id="score-panel" class="score-panel" hidden>
+                    <span class="score-panel__label">Điểm của bạn</span>
+                    <p class="score-panel__value">
+                        <strong id="score-value">0</strong>
+                        <span id="score-maximum">/ 10</span>
+                    </p>
+                </div>
+
+                <dl class="submission-details">
+                    <div>
+                        <dt>Số câu đã làm</dt>
+                        <dd id="answered-value">0/0</dd>
+                    </div>
+                    <div>
+                        <dt>Thời gian nộp</dt>
+                        <dd id="submitted-time">--:--</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <a id="home-link" class="home-button" href="/">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M3.5 11.2 12 4l8.5 7.2"></path>
+                    <path d="M5.5 10.2v9h13v-9M9.5 19.2v-5h5v5"></path>
+                </svg>
+                <span>Quay lại trang chủ</span>
+            </a>
+
+            <p class="completion-note">Bạn có thể đóng trang này sau khi quay về trang chủ.</p>
+        </div>
+    </section>
+</main>
+
+<noscript>
+    <p class="noscript-message">Vui lòng bật JavaScript để xem thông tin hoàn thành bài kiểm tra.</p>
+</noscript>
+
+<script src="./StudentExamResultScriptDemo.js" defer></script>
+</body>
+</html>
