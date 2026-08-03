@@ -1,6 +1,8 @@
 package com.ok.auth.controller;
 
-import com.ok.dto.*;
+import com.ok.dto.request.LoginRequest;
+import com.ok.dto.request.RegisterRequest;
+import com.ok.dto.response.AuthResponse;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
@@ -27,19 +29,14 @@ public class AuthController {
         return authService.registerStudent(request);
     }
 
-    @PostMapping("/student/login")
-    public AuthResponse loginStudent(@Valid @RequestBody LoginRequest request) {
-        return authService.loginStudent(request);
-    }
-
-    @PostMapping("teacher/register")
+    @PostMapping("/teacher/register")
     @ResponseStatus(HttpStatus.CREATED)
     public AuthResponse registerTeacher(@Valid @RequestBody RegisterRequest request) {
         return authService.registerTeacher(request);
     }
 
-    @PostMapping("teacher/login")
-    public AuthResponse loginTeacher(@Valid @RequestBody LoginRequest request) {
-        return authService.loginTeacher(request);
+    @PostMapping("/login")
+    public AuthResponse login(@Valid @RequestBody LoginRequest request) {
+        return authService.login(request);
     }
 }

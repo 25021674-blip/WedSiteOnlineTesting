@@ -1,10 +1,9 @@
 package com.ok.auth.exceptionHandle;
 
-import com.ok.dto.ErrorResponse;
+import com.ok.dto.response.ErrorResponse;
 
 import java.util.LinkedHashMap;
 
-import static org.springframework.http.HttpStatus.resolve;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
