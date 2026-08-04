@@ -32,7 +32,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/auth/**", "/error").permitAll()
+                        .requestMatchers("/api/auth/**", "/auth/**", "/error", "/index.html", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/ws/exams", "/ws/exams/**").permitAll()
                         .requestMatchers("/student-exam/**").permitAll()
                         .anyRequest().authenticated()

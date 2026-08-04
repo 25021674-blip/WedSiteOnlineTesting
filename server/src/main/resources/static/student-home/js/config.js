@@ -5,6 +5,7 @@ export const API_BASE_URL = (
 ).replace(/\/+$/, "");
 
 export const AUTH_STORAGE_KEYS = [
+    "onlineTestingAuthSession",
     "auth",
     "authData",
     "authToken",

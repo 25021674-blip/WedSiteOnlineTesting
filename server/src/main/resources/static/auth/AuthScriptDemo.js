@@ -226,6 +226,14 @@
 
             const session = createSession(responseBody);
             storeSession(session);
+
+            if (session.user.role === "STUDENT") {
+                window.location.assign("/index.html#home");
+                return;
+            }
+
+            showAuthenticatedSession(session, mode);
+            storeSession(session);
             showAuthenticatedSession(session, mode);
         } catch (error) {
             if (error.name === "AbortError") {

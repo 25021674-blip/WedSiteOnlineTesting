@@ -37,7 +37,13 @@ export function getAuthToken() {
 }
 
 export function getStoredUser() {
-    const candidateKeys = ["auth", "authData", "currentUser", "user"];
+    const candidateKeys = [
+        "onlineTestingAuthSession",
+        "auth",
+        "authData",
+        "currentUser",
+        "user"
+    ];
     for (const key of candidateKeys) {
         const value = readJson(localStorage.getItem(key)) || readJson(sessionStorage.getItem(key));
         if (value && typeof value === "object") {
