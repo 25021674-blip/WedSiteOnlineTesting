@@ -7,8 +7,8 @@ import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
@@ -25,20 +25,28 @@ public class JwtService {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final String secret;
-    private final long expirationMillis;
-
     private static final Base64.Decoder BASE64_URL_DECODER =
             Base64.getUrlDecoder();
+
+    private final SecretKeySpec secretKey;
+
+    private final long expirationMillis;
 
     public JwtService(
             @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.expiration-ms}") long expirationMillis
     ) {
-        if (secret == null || secret.length() < 32) {
-            throw new IllegalArgumentException("JWT secret phải có ít nhất 32 ký tự");
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+
+        if (secretBytes.length < 32) {
+            throw new IllegalArgumentException("JWT secret phải có ít nhất 32 byte");
         }
-        this.secret = secret;
+
+        if (expirationMillis <= 0) {
+            throw new IllegalArgumentException("Thời gian hết hạn JWT phải lớn hơn 0");
+        }
+
+        this.secretKey = new SecretKeySpec(secretBytes, "HmacSHA256");
         this.expirationMillis = expirationMillis;
     }
 
@@ -110,9 +118,7 @@ public class JwtService {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
 
-            SecretKeySpec secrecKey = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
-
-            mac.init(secrecKey);
+            mac.init(secretKey);
 
             byte[] signatureBytes = mac.doFinal(
                     data.getBytes(StandardCharsets.UTF_8)
