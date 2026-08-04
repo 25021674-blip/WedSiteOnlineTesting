@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#17153d">
+    <title>EduPortal — Không gian học sinh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar" id="sidebar" aria-label="Điều hướng học sinh">
+            <a class="brand" href="#home" aria-label="Về trang chủ EduPortal">
+                <span class="brand__mark" aria-hidden="true">E</span>
+                <span class="brand__copy">
+                    <strong>EduPortal</strong>
+                    <small>Không gian học sinh</small>
+                </span>
+            </a>
+
+            <button class="sidebar-toggle" id="sidebar-toggle" type="button"
+                    aria-label="Giữ sidebar mở rộng" aria-expanded="false" title="Giữ sidebar mở rộng">
+                <span data-icon="chevron"></span>
+            </button>
+
+            <div class="student-profile">
+                <span class="avatar" id="sidebar-avatar">HS</span>
+                <span class="student-profile__copy">
+                    <strong id="sidebar-name">Học sinh</strong>
+                    <small id="sidebar-email">Chưa đăng nhập</small>
+                </span>
+            </div>
+
+            <nav class="sidebar-nav" aria-label="Các trang">
+                <a class="nav-item" href="#home" data-route="home">
+                    <span class="nav-item__icon" data-icon="home"></span>
+                    <span class="nav-item__label">Trang chủ</span>
+                </a>
+                <a class="nav-item" href="#exams" data-route="exams">
+                    <span class="nav-item__icon" data-icon="exam"></span>
+                    <span class="nav-item__label">Bài kiểm tra</span>
+                </a>
+                <a class="nav-item" href="#scores" data-route="scores">
+                    <span class="nav-item__icon" data-icon="score"></span>
+                    <span class="nav-item__label">Điểm của tôi</span>
+                </a>
+            </nav>
+
+            <div class="sidebar__footer">
+                <a class="nav-item" href="#account" data-route="account">
+                    <span class="nav-item__icon" data-icon="user"></span>
+                    <span class="nav-item__label">Tài khoản</span>
+                </a>
+                <button class="nav-item nav-item--button" id="logout-button" type="button">
+                    <span class="nav-item__icon" data-icon="logout"></span>
+                    <span class="nav-item__label">Đăng xuất</span>
+                </button>
+            </div>
+        </aside>
+
+        <button class="sidebar-backdrop" id="sidebar-backdrop" type="button" aria-label="Đóng menu"></button>
+
+        <main class="main">
+            <header class="topbar">
+                <div class="topbar__title">
+                    <button class="icon-button mobile-menu" id="mobile-menu" type="button" aria-label="Mở menu">
+                        <span data-icon="menu"></span>
+                    </button>
+                    <div>
+                        <p class="eyebrow">Không gian học tập</p>
+                        <h1 id="page-title">Trang chủ</h1>
+                    </div>
+                </div>
+
+                <a class="topbar__profile" href="#account" data-route="account" aria-label="Xem thông tin tài khoản">
+                    <span class="avatar avatar--small" id="topbar-avatar">HS</span>
+                    <span>
+                        <strong id="topbar-name">Học sinh</strong>
+                        <small>Học sinh</small>
+                    </span>
+                </a>
+            </header>
+
+            <section class="scene" id="scene" aria-live="polite"></section>
+        </main>
+    </div>
+
+    <dialog class="exam-dialog" id="exam-dialog" aria-labelledby="dialog-title">
+        <button class="dialog-close" id="dialog-close" type="button" aria-label="Đóng">
+            <span data-icon="close"></span>
+        </button>
+        <div id="dialog-content"></div>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite">
+        <span class="toast__icon" data-icon="check"></span>
+        <span id="toast-message"></span>
+    </div>
+
+    <script type="module" src="./js/app.js"></script>
+</body>
+</html>

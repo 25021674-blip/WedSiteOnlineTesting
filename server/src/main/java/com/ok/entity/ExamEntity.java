@@ -2,7 +2,10 @@ package com.ok.entity;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
+import com.ok.domain.enums.ExamStatus;
 import com.ok.domain.enums.ExamType;
 
 import jakarta.persistence.Column;
@@ -59,6 +62,10 @@ public class ExamEntity {
     @Column(nullable = false, length = 30)
     private ExamType type;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private ExamStatus status = ExamStatus.DRAFT;
+
     public ExamEntity(
             UserEntity teacher,
             String title,
@@ -77,6 +84,41 @@ public class ExamEntity {
         this.durationMinutes = durationMinutes;
         this.maxScore = maxScore;
         this.type = type;
+    }
+
+    public UserEntity getCreatedBy() {
+        return teacher;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startAt == null ? null : LocalDateTime.ofInstant(startAt, ZoneId.systemDefault());
+    }
+
+    public LocalDateTime getDeadline() {
+        return expiresAt == null ? null : LocalDateTime.ofInstant(expiresAt, ZoneId.systemDefault());
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt == null ? null : LocalDateTime.ofInstant(createdAt, ZoneId.systemDefault());
+    }
+
+    public void update(
+            String title,
+            String description,
+            LocalDateTime startTime,
+            LocalDateTime deadline,
+            Integer durationMinutes
+    ) {
+        ZoneId zoneId = ZoneId.systemDefault();
+        this.title = title;
+        this.description = description;
+        this.startAt = startTime.atZone(zoneId).toInstant();
+        this.expiresAt = deadline.atZone(zoneId).toInstant();
+        this.durationMinutes = durationMinutes;
+    }
+
+    public void changeStatus(ExamStatus newStatus){
+        this.status=newStatus;
     }
 
     @PrePersist

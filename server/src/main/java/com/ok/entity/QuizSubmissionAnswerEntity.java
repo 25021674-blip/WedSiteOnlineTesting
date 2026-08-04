@@ -1,0 +1,47 @@
+package com.ok.entity;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@NoArgsConstructor
+@Entity
+@Table(name = "quiz_submission_answers", uniqueConstraints = @UniqueConstraint(
+        columnNames = {"submission_id", "question_id"}
+))
+public class QuizSubmissionAnswerEntity {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "submission_id", nullable = false)
+    private QuizSubmissionEntity submission;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "question_id", nullable = false)
+    private QuestionEntity question;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "selected_option_id", nullable = false)
+    private QuestionOptionEntity selectedOption;
+
+    @Column(nullable = false)
+    private boolean correct;
+
+    @Column(nullable = false)
+    private Double awardedPoints;
+
+    public QuizSubmissionAnswerEntity(QuizSubmissionEntity submission, QuestionEntity question,
+            QuestionOptionEntity selectedOption, boolean correct, double awardedPoints) {
+        this.submission = submission;
+        this.question = question;
+        select(selectedOption, correct, awardedPoints);
+    }
+
+    public void select(QuestionOptionEntity selectedOption, boolean correct, double awardedPoints) {
+        this.selectedOption = selectedOption;
+        this.correct = correct;
+        this.awardedPoints = awardedPoints;
+    }
+}

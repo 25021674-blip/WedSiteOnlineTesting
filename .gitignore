@@ -1,6 +1,7 @@
 HELP.md
 .gradle
 build/
+**/build-codex-*/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
