@@ -1,5 +1,6 @@
 package com.ok.dto.response;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 import com.ok.domain.enums.*;
@@ -14,6 +15,7 @@ public record ExamResponse(
         LocalDateTime startTime,
         LocalDateTime deadline,
         Integer durationMinutes,
+        BigDecimal maxScore,
         Long createdById,
         String createdByName,
         LocalDateTime createdAt,

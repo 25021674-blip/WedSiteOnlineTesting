@@ -29,9 +29,11 @@ public record CreateExamRequest(
         @NotNull(message = "Hạn nộp không được để trống")
         LocalDateTime deadline,
 
+        @NotNull(message = "Thời lượng không được để trống")
         @Positive(message = "Thời lượng phải lớn hơn 0")
         Integer durationMinutes,
 
+        @NotNull(message = "Tổng điểm không được để trống")
         @DecimalMin(value = "0.01", message = "Tổng điểm phải lớn hơn 0")
         @Digits(integer = 8, fraction = 2, message = "Tổng điểm chỉ được có tối đa 2 chữ số thập phân")
         BigDecimal maxScore

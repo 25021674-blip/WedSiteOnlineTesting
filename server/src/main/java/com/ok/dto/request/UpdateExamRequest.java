@@ -1,6 +1,9 @@
 package com.ok.dto.request;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -11,7 +14,11 @@ public record UpdateExamRequest(
         @Size(max = 2000) String description, //@Size(max = 2000) → mặc định báo lỗi "size must be between 0 and 2000".
         @NotNull LocalDateTime startTime, //@NotNull → mặc định báo lỗi "must not be null".
         @NotNull LocalDateTime deadline,
-        @Positive Integer durationMinutes //@Positive → mặc định báo lỗi "must be greater than 0".
+        @NotNull @Positive Integer durationMinutes, //@Positive → mặc định báo lỗi "must be greater than 0".
+        @NotNull
+        @DecimalMin(value = "0.01", message = "Tổng điểm phải lớn hơn 0")
+        @Digits(integer = 8, fraction = 2, message = "Tổng điểm chỉ được có tối đa 2 chữ số thập phân")
+        BigDecimal maxScore
 ) {}
 
 

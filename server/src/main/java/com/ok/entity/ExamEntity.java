@@ -107,7 +107,8 @@ public class ExamEntity {
             String description,
             LocalDateTime startTime,
             LocalDateTime deadline,
-            Integer durationMinutes
+            Integer durationMinutes,
+            BigDecimal maxScore
     ) {
         ZoneId zoneId = ZoneId.systemDefault();
         this.title = title;
@@ -115,6 +116,7 @@ public class ExamEntity {
         this.startAt = startTime.atZone(zoneId).toInstant();
         this.expiresAt = deadline.atZone(zoneId).toInstant();
         this.durationMinutes = durationMinutes;
+        this.maxScore = maxScore;
     }
 
     public void changeStatus(ExamStatus newStatus){

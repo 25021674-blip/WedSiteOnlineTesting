@@ -39,7 +39,7 @@ public class ExamService {
     @Transactional
     public ExamResponse createExam(CreateExamRequest request, String email) {
         validateTime(request.startTime(), request.deadline());
-        validateDuration(request.type(), request.durationMinutes());
+        validateDuration(request.durationMinutes());
         UserEntity creator = currentUser(email);
         requireTeacher(creator);
         ZoneId zoneId = ZoneId.systemDefault();
@@ -76,9 +76,9 @@ public class ExamService {
         ExamEntity exam = findExam(id);
         requireOwnerOrAdmin(exam, currentUser(email));
         requireDraft(exam);
-        validateDuration(exam.getType(), request.durationMinutes());
+        validateDuration(request.durationMinutes());
         exam.update(request.title().trim(), normalize(request.description()), request.startTime(),
-                request.deadline(), request.durationMinutes());
+                request.deadline(), request.durationMinutes(), request.maxScore());
         return toResponse(exam);
     }
 
@@ -145,14 +145,10 @@ public class ExamService {
         }
     }
 
-    private void validateDuration(ExamType type, Integer durationMinutes) {
-        if (type == ExamType.MULTIPLE_CHOICE && (durationMinutes == null || durationMinutes <= 0)) {
+    private void validateDuration(Integer durationMinutes) {
+        if (durationMinutes == null || durationMinutes <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Đề trắc nghiệm phải có thời lượng làm bài lớn hơn 0");
-        }
-        if (type == ExamType.ESSAY && durationMinutes != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Thời lượng riêng chỉ áp dụng cho đề trắc nghiệm");
+                    "Thời lượng làm bài phải lớn hơn 0");
         }
     }
 
@@ -177,6 +173,7 @@ public class ExamService {
                 .orElse(null);
         return new ExamResponse(exam.getId(), exam.getTitle(), exam.getDescription(), exam.getType(),
                 exam.getStatus(), exam.getStartTime(), exam.getDeadline(), exam.getDurationMinutes(),
+                exam.getMaxScore(),
                 exam.getCreatedBy().getId(), exam.getCreatedBy().getFullName(), exam.getCreatedAt(),
                 assignmentFile);
     }
