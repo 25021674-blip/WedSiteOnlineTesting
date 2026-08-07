@@ -2,8 +2,8 @@ package com.ok.entity;
 
 import java.time.LocalDateTime;
 
-import com.ok.dto.ExamStatus;
-import com.ok.dto.ExamType;
+import com.ok.dto.common.ExamStatus;
+import com.ok.dto.common.ExamType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

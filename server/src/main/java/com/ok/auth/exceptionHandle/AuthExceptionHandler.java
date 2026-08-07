@@ -1,6 +1,6 @@
 package com.ok.auth.exceptionHandle;
 
-import com.ok.dto.ErrorResponse;
+import com.ok.dto.common.ErrorResponse;
 
 import java.util.LinkedHashMap;
 

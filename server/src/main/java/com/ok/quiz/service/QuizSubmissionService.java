@@ -15,7 +15,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.ok.dto.*;
+import com.ok.dto.common.ExamStatus;
+import com.ok.dto.common.ExamType;
+import com.ok.dto.common.QuizAttemptStatus;
+import com.ok.dto.common.Role;
+import com.ok.dto.student.QuizAnswerResultResponse;
+import com.ok.dto.student.QuizAttemptResponse;
+import com.ok.dto.student.QuizResultResponse;
+import com.ok.dto.student.SelectedAnswerRequest;
+import com.ok.dto.student.SubmitQuizRequest;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.UserEntity;
 import com.ok.exam.service.ExamService;

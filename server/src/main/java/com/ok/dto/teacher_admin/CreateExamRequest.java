@@ -1,4 +1,6 @@
-package com.ok.dto;
+package com.ok.dto.teacher_admin;
+
+import com.ok.dto.common.ExamType;
 
 import java.time.LocalDateTime;// biểu diễn ngày giờ (có cả ngày và thời gian, nhưng không kèm múi giờ).
 

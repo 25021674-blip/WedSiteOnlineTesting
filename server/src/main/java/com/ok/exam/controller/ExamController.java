@@ -15,10 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ok.dto.CreateExamRequest;
-import com.ok.dto.ExamResponse;
-import com.ok.dto.UpdateExamRequest;
-import com.ok.dto.UpdateExamStatusRequest;
+import com.ok.dto.common.ExamResponse;
+import com.ok.dto.teacher_admin.CreateExamRequest;
+import com.ok.dto.teacher_admin.UpdateExamRequest;
+import com.ok.dto.teacher_admin.UpdateExamStatusRequest;
 import com.ok.exam.service.ExamService;
 
 import jakarta.validation.Valid; // kích hoạt validation theo annotation trong DTO (ví dụ @NotBlank, @Size, @NotNull).

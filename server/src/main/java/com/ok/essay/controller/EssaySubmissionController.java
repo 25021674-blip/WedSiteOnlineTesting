@@ -13,8 +13,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ok.dto.EssaySubmissionResponse;
-import com.ok.dto.GradeEssayRequest;
+import com.ok.dto.common.EssaySubmissionResponse;
+import com.ok.dto.teacher_admin.GradeEssayRequest;
 import com.ok.essay.service.EssaySubmissionService;
 import com.ok.essay.service.EssaySubmissionService.DownloadedSubmission;
 

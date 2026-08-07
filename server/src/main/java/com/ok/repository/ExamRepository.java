@@ -3,7 +3,7 @@ package com.ok.repository;
 import com.ok.entity.ExamEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
-import com.ok.dto.ExamStatus;
+import com.ok.dto.common.ExamStatus;
 
 public interface ExamRepository extends JpaRepository<ExamEntity, Long> {
     List<ExamEntity> findByCreatedByIdOrderByCreatedAtDesc(Long userId);

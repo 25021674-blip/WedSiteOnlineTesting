@@ -9,10 +9,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.ok.dto.EssayAssignmentFileResponse;
-import com.ok.dto.ExamStatus;
-import com.ok.dto.ExamType;
-import com.ok.dto.Role;
+import com.ok.dto.common.EssayAssignmentFileResponse;
+import com.ok.dto.common.ExamStatus;
+import com.ok.dto.common.ExamType;
+import com.ok.dto.common.Role;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.UserEntity;
 import com.ok.essay.entity.EssayAssignmentFileEntity;

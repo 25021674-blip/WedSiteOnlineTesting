@@ -1,6 +1,6 @@
 package com.ok.entity;
 
-import com.ok.dto.Role;
+import com.ok.dto.common.Role;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;

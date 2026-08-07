@@ -1,4 +1,6 @@
-package com.ok.dto;
+package com.ok.dto.auth;
+
+import com.ok.dto.common.Role;
 
 public record AuthResponse(
         String token,

@@ -1,4 +1,4 @@
-package com.ok.dto;
+package com.ok.dto.teacher_admin;
 
 import java.util.List;
 import jakarta.validation.Valid;

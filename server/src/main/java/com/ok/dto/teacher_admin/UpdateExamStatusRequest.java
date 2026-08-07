@@ -1,4 +1,6 @@
-package com.ok.dto;
+package com.ok.dto.teacher_admin;
+
+import com.ok.dto.common.ExamStatus;
 
 import jakarta.validation.constraints.NotNull;
 

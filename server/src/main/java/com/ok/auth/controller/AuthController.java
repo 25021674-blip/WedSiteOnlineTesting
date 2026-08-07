@@ -1,6 +1,8 @@
 package com.ok.auth.controller;
 
-import com.ok.dto.*;
+import com.ok.dto.auth.AuthResponse;
+import com.ok.dto.auth.LoginRequest;
+import com.ok.dto.auth.RegisterRequest;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;

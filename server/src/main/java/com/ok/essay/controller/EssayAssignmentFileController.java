@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.ok.dto.EssayAssignmentFileResponse;
+import com.ok.dto.common.EssayAssignmentFileResponse;
 import com.ok.essay.service.EssayAssignmentFileService;
 import com.ok.essay.service.EssayAssignmentFileService.DownloadedAssignment;
 

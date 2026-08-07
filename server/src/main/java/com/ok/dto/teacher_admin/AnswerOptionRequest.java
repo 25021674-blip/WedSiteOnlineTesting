@@ -1,4 +1,4 @@
-package com.ok.dto;
+package com.ok.dto.teacher_admin;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

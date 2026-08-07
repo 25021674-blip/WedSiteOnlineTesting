@@ -1,4 +1,4 @@
-package com.ok.dto;
+package com.ok.dto.teacher_admin;
 
 import java.time.LocalDateTime;
 import jakarta.validation.constraints.NotBlank;

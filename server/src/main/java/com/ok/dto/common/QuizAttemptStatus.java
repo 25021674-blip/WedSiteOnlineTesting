@@ -1,4 +1,4 @@
-package com.ok.dto;
+package com.ok.dto.common;
 
 public enum QuizAttemptStatus {
     IN_PROGRESS,

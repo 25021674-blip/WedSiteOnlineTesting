@@ -1,7 +1,7 @@
 package com.ok.quiz.entity;
 
 import java.time.LocalDateTime;
-import com.ok.dto.QuizAttemptStatus;
+import com.ok.dto.common.QuizAttemptStatus;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.UserEntity;
 import jakarta.persistence.*;

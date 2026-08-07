@@ -29,18 +29,18 @@ Khi đọc một request đang chạy, đọc theo chiều ngược lại:
 
 ### Nền tảng
 
-1. `dto/Role.java`
-2. `dto/ExamType.java`
-3. `dto/ExamStatus.java`
+1. `dto/common/Role.java`
+2. `dto/common/ExamType.java`
+3. `dto/common/ExamStatus.java`
 4. `entity/UserEntity.java`
 5. `entity/ExamEntity.java`
 
 ### API quản lý đề
 
-6. `dto/CreateExamRequest.java`
-7. `dto/UpdateExamRequest.java`
-8. `dto/UpdateExamStatusRequest.java`
-9. `dto/ExamResponse.java`
+6. `dto/teacher_admin/CreateExamRequest.java`
+7. `dto/teacher_admin/UpdateExamRequest.java`
+8. `dto/teacher_admin/UpdateExamStatusRequest.java`
+9. `dto/common/ExamResponse.java`
 10. `repository/ExamRepository.java`
 11. `exam/service/ExamService.java`
 12. `exam/controller/ExamController.java`
@@ -49,14 +49,14 @@ Khi đọc một request đang chạy, đọc theo chiều ngược lại:
 
 13. `essay/entity/EssayAssignmentFileEntity.java`
 14. `repository/EssayAssignmentFileRepository.java`
-15. `dto/EssayAssignmentFileResponse.java`
+15. `dto/common/EssayAssignmentFileResponse.java`
 16. `essay/service/FileStorageService.java`
 17. `essay/service/EssayAssignmentFileService.java`
 18. `essay/controller/EssayAssignmentFileController.java`
 19. `essay/entity/EssaySubmissionEntity.java`
 20. `repository/EssaySubmissionRepository.java`
-21. `dto/EssaySubmissionResponse.java`
-22. `dto/GradeEssayRequest.java`
+21. `dto/common/EssaySubmissionResponse.java`
+22. `dto/teacher_admin/GradeEssayRequest.java`
 23. `essay/service/EssaySubmissionService.java`
 24. `essay/controller/EssaySubmissionController.java`
 
@@ -67,14 +67,14 @@ Khi đọc một request đang chạy, đọc theo chiều ngược lại:
 22. `quiz/entity/QuizSubmissionEntity.java`
 23. `quiz/entity/QuizSubmissionAnswerEntity.java`
 24. Ba repository tương ứng trong `repository/` (lựa chọn được lưu qua cascade của câu hỏi).
-25. `dto/AnswerOptionRequest.java`
-26. `dto/CreateQuestionRequest.java`
+25. `dto/teacher_admin/AnswerOptionRequest.java`
+26. `dto/teacher_admin/CreateQuestionRequest.java`
 27. Các response có chữ `Student` và `Management`.
 28. `quiz/service/QuestionService.java`
 29. `quiz/controller/QuestionController.java`
-30. `dto/SelectedAnswerRequest.java`
-31. `dto/SubmitQuizRequest.java`
-32. `dto/QuizResultResponse.java`
+30. `dto/student/SelectedAnswerRequest.java`
+31. `dto/student/SubmitQuizRequest.java`
+32. `dto/student/QuizResultResponse.java`
 33. `quiz/service/QuizSubmissionService.java`
 34. `quiz/controller/QuizSubmissionController.java`
 

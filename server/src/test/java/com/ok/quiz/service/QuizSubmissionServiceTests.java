@@ -13,11 +13,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.ok.dto.ExamStatus;
-import com.ok.dto.ExamType;
-import com.ok.dto.QuizAttemptResponse;
-import com.ok.dto.QuizAttemptStatus;
-import com.ok.dto.Role;
+import com.ok.dto.common.ExamStatus;
+import com.ok.dto.common.ExamType;
+import com.ok.dto.common.QuizAttemptStatus;
+import com.ok.dto.common.Role;
+import com.ok.dto.student.QuizAttemptResponse;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.UserEntity;
 import com.ok.exam.service.ExamService;

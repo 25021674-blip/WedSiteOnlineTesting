@@ -11,7 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import com.ok.repository.UserRepository;
-import com.ok.dto.*;
+import com.ok.dto.auth.AuthResponse;
+import com.ok.dto.auth.LoginRequest;
+import com.ok.dto.auth.RegisterRequest;
+import com.ok.dto.common.Role;
 import com.ok.entity.UserEntity;
 
 import lombok.AllArgsConstructor;

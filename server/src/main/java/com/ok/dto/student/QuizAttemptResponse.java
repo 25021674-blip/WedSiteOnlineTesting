@@ -1,4 +1,6 @@
-package com.ok.dto;
+package com.ok.dto.student;
+
+import com.ok.dto.common.QuizAttemptStatus;
 
 import java.time.LocalDateTime;
 

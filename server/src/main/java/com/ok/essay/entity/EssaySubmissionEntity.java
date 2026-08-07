@@ -56,6 +56,11 @@ public class EssaySubmissionEntity {
         this.submittedAt = LocalDateTime.now();
     }
 
+    public void grade(double score) {
+        this.score = score;
+        this.feedback = null;
+    }
+
     public void grade(double score, String feedback) {
         this.score = score;
         this.feedback = feedback;

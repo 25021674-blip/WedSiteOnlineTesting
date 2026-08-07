@@ -1,4 +1,4 @@
-package com.ok.dto;
+package com.ok.dto.student;
 
 import java.util.List;
 
