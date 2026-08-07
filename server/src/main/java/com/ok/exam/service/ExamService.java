@@ -1,5 +1,6 @@
 package com.ok.exam.service;
 
+import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -10,12 +11,14 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.ExamStatus;
 import com.ok.domain.enums.ExamType;
+import com.ok.domain.enums.QuestionType;
 import com.ok.domain.enums.Role;
 import com.ok.dto.request.UpdateExamRequest;
 import com.ok.dto.request.teacher.CreateExamRequest;
 import com.ok.dto.response.ExamResponse;
 import com.ok.dto.response.teacher.EssayAssignmentFileResponse;
 import com.ok.entity.ExamEntity;
+import com.ok.entity.QuestionEntity;
 import com.ok.entity.UserEntity;
 import com.ok.entity.EssayAssignmentFileEntity;
 import com.ok.exam.essay.service.FileStorageService;
@@ -153,14 +156,39 @@ public class ExamService {
     }
 
     private void validateReadyToPublish(ExamEntity exam) {
-        if (exam.getType() == ExamType.ESSAY && !assignmentFileRepository.existsByExamId(exam.getId())) {
+        List<QuestionEntity> questions = questionRepository.findByExamIdOrderById(exam.getId());
+        if (questions.isEmpty()) {
+            if (exam.getType() == ExamType.ESSAY
+                    && assignmentFileRepository.existsByExamId(exam.getId())) {
+                return;
+            }
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Phải tải file đề tự luận lên trước khi công khai bài kiểm tra");
+                    exam.getType() == ExamType.ESSAY
+                            ? "Phải thêm ít nhất một câu tự luận hoặc tải file đề trước khi xuất bản"
+                            : "Phải thêm ít nhất một câu hỏi trước khi xuất bản");
         }
-        if (exam.getType() == ExamType.MULTIPLE_CHOICE && questionRepository.countByExamId(exam.getId()) == 0) {
+
+        boolean hasIncompatibleType = questions.stream()
+                .anyMatch(question -> !isQuestionTypeCompatible(
+                        exam.getType(), question.getQuestionType()));
+        if (hasIncompatibleType) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Phải thêm ít nhất một câu hỏi trước khi công khai bài kiểm tra");
+                    "Bài kiểm tra có loại câu hỏi không phù hợp");
         }
+
+        BigDecimal questionTotal = questions.stream()
+                .map(QuestionEntity::getMaxScore)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (questionTotal.compareTo(exam.getMaxScore()) != 0) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Tổng điểm các câu hỏi phải bằng điểm tối đa của bài kiểm tra");
+        }
+    }
+
+    private boolean isQuestionTypeCompatible(ExamType examType, QuestionType questionType) {
+        return examType == ExamType.MIXED
+                || examType == ExamType.MULTIPLE_CHOICE && questionType == QuestionType.MULTIPLE_CHOICE
+                || examType == ExamType.ESSAY && questionType == QuestionType.ESSAY;
     }
 
     private String normalize(String value) {

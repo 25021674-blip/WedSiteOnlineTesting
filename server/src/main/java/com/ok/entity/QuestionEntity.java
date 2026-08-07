@@ -59,8 +59,9 @@ public class QuestionEntity {
         this.questionOrder = questionOrder;
     }
 
-    public void update(String content, BigDecimal maxScore) {
+    public void update(String content, QuestionType questionType, BigDecimal maxScore) {
         this.content = content;
+        this.questionType = questionType;
         this.maxScore = maxScore;
     }
 

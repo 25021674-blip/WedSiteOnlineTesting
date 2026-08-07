@@ -1,3 +1,8 @@
 package com.ok.dto.response.teacher;
 
-public record AnswerOptionManagementResponse(Long id, String content, boolean correct) {}
+public record AnswerOptionManagementResponse(
+        Long id,
+        Integer optionOrder,
+        String content,
+        boolean correct
+) {}

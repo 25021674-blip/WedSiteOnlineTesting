@@ -1,6 +1,5 @@
 package com.ok.exam.quiz.service;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -40,57 +39,51 @@ public class QuestionService {
         ExamEntity exam = examService.findExam(examId);
         UserEntity user = examService.currentUser(email);
         examService.requireOwnerOrAdmin(exam, user);
-        requireDraftQuiz(exam);
-        validateOptions(request.options());
+        requireDraft(exam);
+        validateQuestionType(exam, request.questionType());
+        List<AnswerOptionRequest> options = optionsOrEmpty(request.options());
+        validateOptions(request.questionType(), options);
         QuestionEntity question = new QuestionEntity(
                 exam,
                 request.content().trim(),
-                QuestionType.MULTIPLE_CHOICE,
-                BigDecimal.valueOf(request.points()),
+                request.questionType(),
+                request.points(),
                 nextQuestionOrder(examId));
-        IntStream.range(0, request.options().size()).forEach(index -> {
-            AnswerOptionRequest option = request.options().get(index);
-            question.addOption(new QuestionOptionEntity(
-                    option.content().trim(),
-                    option.correct(),
-                    index + 1));
-        });
-        return management(repository.save(question));
+        question.replaceOptions(toOptionEntities(options));
+        return management(repository.saveAndFlush(question));
     }
 
     @Transactional
     public QuestionManagementResponse update(Long id, CreateQuestionRequest request, String email) {
         QuestionEntity question = find(id);
         examService.requireOwnerOrAdmin(question.getExam(), examService.currentUser(email));
-        requireDraftQuiz(question.getExam());
-        validateOptions(request.options());
-        question.update(request.content().trim(), BigDecimal.valueOf(request.points()));
-        question.replaceOptions(IntStream.range(0, request.options().size())
-                .mapToObj(index -> {
-                    AnswerOptionRequest option = request.options().get(index);
-                    return new QuestionOptionEntity(
-                            option.content().trim(),
-                            option.correct(),
-                            index + 1);
-                })
-                .toList());
-        return management(question);
+        requireDraft(question.getExam());
+        validateQuestionType(question.getExam(), request.questionType());
+        List<AnswerOptionRequest> options = optionsOrEmpty(request.options());
+        validateOptions(request.questionType(), options);
+        question.update(request.content().trim(), request.questionType(), request.points());
+        question.replaceOptions(toOptionEntities(options));
+        return management(repository.saveAndFlush(question));
     }
 
     @Transactional
     public void delete(Long id, String email) {
         QuestionEntity question = find(id);
         examService.requireOwnerOrAdmin(question.getExam(), examService.currentUser(email));
-        requireDraftQuiz(question.getExam());
+        requireDraft(question.getExam());
+        Long examId = question.getExam().getId();
         repository.delete(question);
+        repository.flush();
+        compactQuestionOrder(examId);
     }
 
     @Transactional(readOnly = true)
     public List<QuestionManagementResponse> managementList(Long examId, String email) {
         ExamEntity exam = examService.findExam(examId);
         examService.requireOwnerOrAdmin(exam, examService.currentUser(email));
-        requireQuiz(exam);
-        return repository.findByExamIdOrderById(examId).stream().map(this::management).toList();
+        return repository.findByExamIdOrderByQuestionOrderAsc(examId).stream()
+                .map(this::management)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -112,8 +105,7 @@ public class QuestionService {
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy câu hỏi"));
     }
 
-    private void requireDraftQuiz(ExamEntity exam) {
-        requireQuiz(exam);
+    private void requireDraft(ExamEntity exam) {
         if (exam.getStatus() != ExamStatus.DRAFT) throw new ResponseStatusException(HttpStatus.CONFLICT, "Chỉ sửa câu hỏi khi đề ở trạng thái DRAFT");
     }
 
@@ -121,24 +113,93 @@ public class QuestionService {
         if (exam.getType() != ExamType.MULTIPLE_CHOICE) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đây không phải đề trắc nghiệm");
     }
 
-    private void validateOptions(List<AnswerOptionRequest> options) {
+    private void validateQuestionType(ExamEntity exam, QuestionType questionType) {
+        if (questionType == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Loại câu hỏi không được để trống");
+        }
+        boolean compatible = switch (exam.getType()) {
+            case MULTIPLE_CHOICE -> questionType == QuestionType.MULTIPLE_CHOICE;
+            case ESSAY -> questionType == QuestionType.ESSAY;
+            case MIXED -> true;
+        };
+        if (!compatible) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Loại câu hỏi không phù hợp với loại bài kiểm tra");
+        }
+    }
+
+    private void validateOptions(QuestionType questionType, List<AnswerOptionRequest> options) {
+        if (questionType == QuestionType.ESSAY) {
+            if (!options.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Câu tự luận không được có phương án lựa chọn");
+            }
+            return;
+        }
         long correctCount = options.stream().filter(AnswerOptionRequest::correct).count();
         if (options.size() < 2 || correctCount != 1) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Mỗi câu phải có ít nhất 2 lựa chọn và đúng 1 đáp án đúng");
         }
     }
 
+    private List<AnswerOptionRequest> optionsOrEmpty(List<AnswerOptionRequest> options) {
+        return options == null ? List.of() : options;
+    }
+
+    private List<QuestionOptionEntity> toOptionEntities(List<AnswerOptionRequest> options) {
+        return IntStream.range(0, options.size())
+                .mapToObj(index -> {
+                    AnswerOptionRequest option = options.get(index);
+                    return new QuestionOptionEntity(
+                            option.content().trim(),
+                            option.correct(),
+                            index + 1);
+                })
+                .toList();
+    }
+
     private int nextQuestionOrder(Long examId) {
-        return repository.findByExamIdOrderById(examId).stream()
+        return repository.findByExamIdOrderByQuestionOrderAsc(examId).stream()
                 .map(QuestionEntity::getQuestionOrder)
                 .filter(Objects::nonNull)
                 .max(Integer::compareTo)
                 .orElse(0) + 1;
     }
 
+    private void compactQuestionOrder(Long examId) {
+        List<QuestionEntity> questions = repository.findByExamIdOrderByQuestionOrderAsc(examId);
+        boolean hasOrderGap = IntStream.range(0, questions.size())
+                .anyMatch(index -> !Objects.equals(
+                        questions.get(index).getQuestionOrder(), index + 1));
+        if (!hasOrderGap) {
+            return;
+        }
+
+        IntStream.range(0, questions.size())
+                .forEach(index -> questions.get(index).changeOrder(-(index + 1)));
+        repository.flush();
+
+        IntStream.range(0, questions.size())
+                .forEach(index -> questions.get(index).changeOrder(index + 1));
+        repository.flush();
+    }
+
     private QuestionManagementResponse management(QuestionEntity q) {
-        return new QuestionManagementResponse(q.getId(), q.getExam().getId(), q.getContent(), q.getMaxScore().doubleValue(),
-                q.getOptions().stream().map(o -> new AnswerOptionManagementResponse(o.getId(), o.getContent(), o.isCorrect())).toList());
+        return new QuestionManagementResponse(
+                q.getId(),
+                q.getExam().getId(),
+                q.getQuestionOrder(),
+                q.getQuestionType(),
+                q.getContent(),
+                q.getMaxScore(),
+                q.getOptions().stream()
+                        .map(option -> new AnswerOptionManagementResponse(
+                                option.getId(),
+                                option.getOptionOrder(),
+                                option.getContent(),
+                                option.isCorrect()))
+                        .toList());
     }
 
     private QuestionStudentResponse student(QuestionEntity q) {
