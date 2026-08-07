@@ -18,4 +18,8 @@ public record RegisterRequest(
         @Size(max = 72, message = "Mật khẩu không được vượt quá 72 ký tự")
         String password
 ) {
+    public RegisterRequest {
+        fullName = fullName == null ? null : fullName.trim();
+        email = email == null ? null : email.trim();
+    }
 }

@@ -12,4 +12,7 @@ public record LoginRequest(
         @NotBlank(message = "Mật khẩu không được để trống")
         String password
 ) {
+    public LoginRequest {
+        email = email == null ? null : email.trim();
+    }
 }

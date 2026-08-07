@@ -1,5 +1,6 @@
 package com.ok.essay.service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 import org.springframework.core.io.Resource;
@@ -28,6 +29,7 @@ public class EssayAssignmentFileService {
     private final EssayAssignmentFileRepository repository;
     private final ExamService examService;
     private final FileStorageService storageService;
+    private final Clock clock;
 
     @Transactional
     public EssayAssignmentFileResponse upload(Long examId, MultipartFile file, String email) {
@@ -89,7 +91,7 @@ public class EssayAssignmentFileService {
         requireEssay(exam);
         boolean manager = user.getRole() == Role.ADMIN || exam.getCreatedBy().getId().equals(user.getId());
         if (manager) return;
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         if (user.getRole() != Role.STUDENT || exam.getStatus() != ExamStatus.PUBLISHED
                 || now.isBefore(exam.getStartTime()) || now.isAfter(exam.getDeadline())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
