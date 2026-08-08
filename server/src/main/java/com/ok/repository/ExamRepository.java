@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface ExamRepository extends JpaRepository<ExamEntity, Long> {
-    List<ExamEntity> findByCreatedByIdOrderByCreatedAtDesc(Long userId);
+    List<ExamEntity> findByTeacherIdOrderByCreatedAtDesc(Long userId);
     List<ExamEntity> findByStatusOrderByCreatedAtDesc(ExamStatus status);
 }

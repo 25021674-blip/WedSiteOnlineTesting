@@ -1,5 +1,6 @@
 package com.ok.exam.essay.service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,6 +31,7 @@ public class EssaySubmissionService {
     private final EssaySubmissionRepository repository;
     private final ExamService examService;
     private final FileStorageService storageService;
+    private final Clock clock;
 
     @Transactional
     public EssaySubmissionResponse submit(Long examId, MultipartFile file, String email) {
@@ -95,7 +97,7 @@ public class EssaySubmissionService {
 
     private void requireOpenEssay(ExamEntity exam) {
         if (exam.getType() != ExamType.ESSAY) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đây không phải đề tự luận");
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         if (exam.getStatus() != ExamStatus.PUBLISHED || now.isBefore(exam.getStartTime()) || now.isAfter(exam.getDeadline())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài kiểm tra chưa mở hoặc đã hết hạn nộp");
         }

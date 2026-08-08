@@ -1,6 +1,7 @@
 package com.ok.exam.quiz.service;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -34,6 +35,7 @@ public class QuestionService {
     private final QuestionRepository repository;
     private final ExamService examService;
     private final QuizSubmissionService submissionService;
+    private final Clock clock;
 
     @Transactional
     public QuestionManagementResponse create(Long examId, CreateQuestionRequest request, String email) {
@@ -65,6 +67,8 @@ public class QuestionService {
         requireDraftQuiz(question.getExam());
         validateOptions(request.options());
         question.update(request.content().trim(), BigDecimal.valueOf(request.points()));
+        question.replaceOptions(List.of());
+        repository.flush();
         question.replaceOptions(IntStream.range(0, request.options().size())
                 .mapToObj(index -> {
                     AnswerOptionRequest option = request.options().get(index);
@@ -100,7 +104,7 @@ public class QuestionService {
         if (user.getRole() != Role.STUDENT) throw forbidden("Chỉ học sinh sử dụng nội dung đề này");
         requireQuiz(exam);
         submissionService.requireActiveAttempt(examId, user);
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         if (exam.getStatus() != ExamStatus.PUBLISHED || now.isBefore(exam.getStartTime()) || now.isAfter(exam.getDeadline())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài kiểm tra chưa mở hoặc đã kết thúc");
         }

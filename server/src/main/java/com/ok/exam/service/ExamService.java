@@ -56,7 +56,7 @@ public class ExamService {
         if (user.getRole() == Role.ADMIN) {
             exams = examRepository.findAll();
         } else if (user.getRole() == Role.TEACHER) {
-            exams = examRepository.findByCreatedByIdOrderByCreatedAtDesc(user.getId());
+            exams = examRepository.findByTeacherIdOrderByCreatedAtDesc(user.getId());
         } else {
             exams = examRepository.findByStatusOrderByCreatedAtDesc(ExamStatus.PUBLISHED);
         }

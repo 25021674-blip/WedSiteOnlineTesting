@@ -1,5 +1,6 @@
 package com.ok.exam.quiz.service;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,6 +45,7 @@ public class QuizSubmissionService {
     private final QuizSubmissionAnswerRepository answerRepository;
     private final QuestionRepository questionRepository;
     private final ExamService examService;
+    private final Clock clock;
 
     @Transactional
     public QuizAttemptResponse start(Long examId, String email) {
@@ -54,11 +56,11 @@ public class QuizSubmissionService {
         QuizSubmissionEntity existing = submissionRepository
                 .findByExamIdAndStudentId(examId, student.getId()).orElse(null);
         if (existing != null) {
-            finalizeIfExpired(existing, LocalDateTime.now());
+            finalizeIfExpired(existing, now());
             return attemptResponse(existing);
         }
 
-        LocalDateTime startedAt = LocalDateTime.now();
+        LocalDateTime startedAt = now();
         LocalDateTime durationEnd = startedAt.plusMinutes(exam.getDurationMinutes());
         LocalDateTime expiresAt = durationEnd.isBefore(exam.getDeadline())
                 ? durationEnd : exam.getDeadline();
@@ -72,7 +74,7 @@ public class QuizSubmissionService {
         UserEntity student = examService.currentUser(email);
         requireStudent(student);
         QuizSubmissionEntity attempt = findAttempt(examId, student.getId());
-        finalizeIfExpired(attempt, LocalDateTime.now());
+        finalizeIfExpired(attempt, now());
         return attemptResponse(attempt);
     }
 
@@ -95,7 +97,7 @@ public class QuizSubmissionService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài làm đã được kết thúc trước đó");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
         if (!now.isBefore(attempt.getExpiresAt())) {
             finalizeAttempt(attempt, true, now);
             return resultResponse(attempt);
@@ -111,7 +113,7 @@ public class QuizSubmissionService {
         UserEntity student = examService.currentUser(email);
         requireStudent(student);
         QuizSubmissionEntity attempt = findAttempt(examId, student.getId());
-        finalizeIfExpired(attempt, LocalDateTime.now());
+        finalizeIfExpired(attempt, now());
         if (attempt.getStatus() == ExamAttemptStatus.IN_PROGRESS) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài làm chưa được nộp");
         }
@@ -128,8 +130,8 @@ public class QuizSubmissionService {
     public void autoSubmitExpiredAttempts() {
         List<QuizSubmissionEntity> expired = submissionRepository
                 .findByStatusAndExpiresAtLessThanEqualOrderByExpiresAtAsc(
-                        ExamAttemptStatus.IN_PROGRESS, LocalDateTime.now(), PageRequest.of(0, 200));
-        LocalDateTime now = LocalDateTime.now();
+                        ExamAttemptStatus.IN_PROGRESS, now(), PageRequest.of(0, 200));
+        LocalDateTime now = now();
         expired.forEach(attempt -> finalizeAttempt(attempt, true, now));
     }
 
@@ -202,7 +204,7 @@ public class QuizSubmissionService {
         if (exam.getDurationMinutes() == null || exam.getDurationMinutes() <= 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Đề chưa có thời lượng làm bài hợp lệ");
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
         if (exam.getStatus() != ExamStatus.PUBLISHED
                 || now.isBefore(exam.getStartTime()) || !now.isBefore(exam.getDeadline())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài kiểm tra chưa mở hoặc đã kết thúc");
@@ -219,7 +221,7 @@ public class QuizSubmissionService {
         if (attempt.getStatus() != ExamAttemptStatus.IN_PROGRESS) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài làm đã kết thúc");
         }
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = now();
         if (!now.isBefore(attempt.getExpiresAt())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài làm đã hết thời gian");
         }
@@ -228,7 +230,7 @@ public class QuizSubmissionService {
     private QuizAttemptResponse attemptResponse(QuizSubmissionEntity attempt) {
         return new QuizAttemptResponse(attempt.getId(), attempt.getExam().getId(), attempt.getStudent().getId(),
                 attempt.getStatus(), attempt.getStartedAt(), attempt.getExpiresAt(),
-                attempt.getSubmittedAt(), LocalDateTime.now());
+                attempt.getSubmittedAt(), now());
     }
 
     private QuizResultResponse resultResponse(QuizSubmissionEntity attempt) {
@@ -244,5 +246,9 @@ public class QuizSubmissionService {
 
     private ResponseStatusException invalid(String message) {
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(clock);
     }
 }
