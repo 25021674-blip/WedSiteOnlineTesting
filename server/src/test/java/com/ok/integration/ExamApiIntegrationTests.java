@@ -74,6 +74,25 @@ class ExamApiIntegrationTests extends AbstractApiIntegrationTest {
     }
 
     @Test
+    void teacherCanCreateEssayWithNullDuration() throws Exception {
+        UserEntity teacher = user("teacher@example.com", Role.TEACHER);
+        CreateExamRequest request = new CreateExamRequest(
+                "Essay", null, ExamType.ESSAY,
+                NOW.plusHours(1), NOW.plusHours(2), null, BigDecimal.TEN);
+
+        mvc.perform(post("/api/exams")
+                        .header("Authorization", bearer(teacher))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.type").value("ESSAY"))
+                .andExpect(jsonPath("$.durationMinutes").doesNotExist());
+
+        ExamEntity saved = examRepository.findAll().getFirst();
+        assertThat(saved.getDurationMinutes()).isNull();
+    }
+
+    @Test
     void createValidationRejectsBlankAndOversizedFields() throws Exception {
         UserEntity teacher = user("teacher@example.com", Role.TEACHER);
         assertCreateBadRequest(teacher, new CreateExamRequest(" ", null, ExamType.MULTIPLE_CHOICE,

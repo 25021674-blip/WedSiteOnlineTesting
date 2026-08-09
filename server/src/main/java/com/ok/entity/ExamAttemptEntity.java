@@ -79,11 +79,20 @@ public class ExamAttemptEntity {
             UserEntity student,
             Instant deadlineAt
     ) {
+        this(exam, student, deadlineAt, Instant.now());
+    }
+
+    public ExamAttemptEntity(
+            ExamEntity exam,
+            UserEntity student,
+            Instant deadlineAt,
+            Instant startedAt
+    ) {
         this.exam = exam;
         this.student = student;
-        this.startedAt = Instant.now();
+        this.startedAt = Objects.requireNonNull(startedAt);
         this.deadlineAt = deadlineAt;
-        this.lastHeartbeatAt = Instant.now();
+        this.lastHeartbeatAt = this.startedAt;
         this.lastActivityAt = this.lastHeartbeatAt;
         this.status = ExamAttemptStatus.IN_PROGRESS;
     }
@@ -116,16 +125,17 @@ public class ExamAttemptEntity {
         return this.screenExitCount;
     }
 
-    public void autoSubmit(Instant submittedAt) {
+    public void autoSubmit(Instant submittedAt, BigDecimal score) {
         if (status != ExamAttemptStatus.IN_PROGRESS) {
             return;
         }
 
         this.status = ExamAttemptStatus.AUTO_SUBMITTED;
         this.submittedAt = Objects.requireNonNull(submittedAt);
+        this.score = Objects.requireNonNull(score);
     }
 
-    public void submit(Instant submittedAt) {
+    public void submit(Instant submittedAt, BigDecimal score) {
         if (status != ExamAttemptStatus.IN_PROGRESS) {
             return;
         }
@@ -133,6 +143,11 @@ public class ExamAttemptEntity {
         Instant submissionTime = Objects.requireNonNull(submittedAt);
         this.status = ExamAttemptStatus.SUBMITTED;
         this.submittedAt = submissionTime;
+        this.score = Objects.requireNonNull(score);
         recordActivity(submissionTime);
+    }
+
+    public void recordCalculatedScore(BigDecimal score) {
+        this.score = Objects.requireNonNull(score);
     }
 }

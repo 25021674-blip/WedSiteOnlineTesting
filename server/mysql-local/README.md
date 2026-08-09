@@ -35,4 +35,5 @@ powershell -ExecutionPolicy Bypass -File .\server\mysql-local\run-mysql-tests.ps
 ```
 
 Script đọc credential từ `application-local.properties`, chỉ dùng schema test và không truy cập
-database `online_testing` của backend.
+database `online_testing` của backend. Mỗi lần chạy, script tạo lại `online_testing_test`, áp dụng
+toàn bộ Flyway migration rồi để Hibernate `validate` đối chiếu schema trước khi chạy test.

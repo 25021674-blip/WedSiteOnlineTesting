@@ -1,12 +1,13 @@
 package com.ok.exam.student.scheduler;
 
+import java.time.Clock;
 import java.time.Instant;
 
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.ok.domain.enums.ExamAttemptStatus;
+import com.ok.exam.student.service.ExamAttemptCompletionService;
 import com.ok.repository.StudentExamAttemptRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -16,17 +17,19 @@ import lombok.RequiredArgsConstructor;
 public class ExamAttemptAutoSubmitScheduler {
 
     private final StudentExamAttemptRepository attemptRepository;
+    private final ExamAttemptCompletionService completionService;
+    private final Clock clock;
 
     @Scheduled(
             fixedDelayString =
                     "${app.exam.auto-submit-delay-ms:1000}"
     )
-    @Transactional
     public void autoSubmitExpiredAttempts() {
-        attemptRepository.markExpiredAttemptsAutoSubmitted(
+        Instant serverTime = clock.instant();
+        attemptRepository.findExpiredAttemptIds(
                 ExamAttemptStatus.IN_PROGRESS,
-                ExamAttemptStatus.AUTO_SUBMITTED,
-                Instant.now()
-        );
+                serverTime
+        ).forEach(attemptId -> completionService
+                .autoSubmitExpiredAttempt(attemptId, serverTime));
     }
 }

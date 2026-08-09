@@ -51,7 +51,8 @@ $env:SPRING_DATASOURCE_URL = $testUrl
 $env:SPRING_DATASOURCE_USERNAME = $username
 $env:SPRING_DATASOURCE_PASSWORD = $password
 $env:SPRING_DATASOURCE_DRIVER_CLASS_NAME = "com.mysql.cj.jdbc.Driver"
-$env:SPRING_JPA_HIBERNATE_DDL_AUTO = "create"
+$env:SPRING_JPA_HIBERNATE_DDL_AUTO = "validate"
+$env:SPRING_FLYWAY_ENABLED = "true"
 
 try {
     & $gradle :server:clean :server:mysqlTest --no-daemon "-PbuildDirOverride=$testBuildDir"
@@ -64,4 +65,5 @@ try {
     Remove-Item Env:\SPRING_DATASOURCE_PASSWORD -ErrorAction SilentlyContinue
     Remove-Item Env:\SPRING_DATASOURCE_DRIVER_CLASS_NAME -ErrorAction SilentlyContinue
     Remove-Item Env:\SPRING_JPA_HIBERNATE_DDL_AUTO -ErrorAction SilentlyContinue
+    Remove-Item Env:\SPRING_FLYWAY_ENABLED -ErrorAction SilentlyContinue
 }

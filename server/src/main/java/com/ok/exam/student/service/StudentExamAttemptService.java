@@ -7,6 +7,7 @@ import static org.springframework.http.HttpStatus.GONE;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -21,15 +22,19 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.ExamAttemptStatus;
+import com.ok.domain.enums.ExamStatus;
+import com.ok.domain.enums.ExamType;
 import com.ok.domain.enums.QuestionType;
 import com.ok.domain.enums.Role;
 import com.ok.dto.response.student.StudentExamScreenResponse;
+import com.ok.dto.response.student.StudentExamResultResponse;
 import com.ok.dto.response.student.StudentExamScreenResponse.AnswerInfo;
 import com.ok.dto.response.student.StudentExamScreenResponse.ExamInfo;
 import com.ok.dto.response.student.StudentExamScreenResponse.OptionInfo;
 import com.ok.dto.response.student.StudentExamScreenResponse.Progress;
 import com.ok.dto.response.student.StudentExamScreenResponse.QuestionInfo;
 import com.ok.dto.response.student.SubmitStudentExamResponse;
+import com.ok.exam.student.service.ExamAttemptCompletionService.AttemptResult;
 import com.ok.entity.ExamAttemptEntity;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.QuestionEntity;
@@ -52,6 +57,8 @@ public class StudentExamAttemptService {
     private final StudentExamAttemptRepository attemptRepository;
     private final StudentQuestionRepository questionRepository;
     private final StudentAnswerRepository answerRepository;
+    private final ExamAttemptCompletionService completionService;
+    private final Clock clock;
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public StudentExamScreenResponse startOrResume(
@@ -86,7 +93,7 @@ public class StudentExamAttemptService {
                         "Không tìm thấy bài kiểm tra"
                 ));
 
-        Instant serverTime = Instant.now();
+        Instant serverTime = clock.instant();
         validateExamConfiguration(exam, serverTime);
 
         Optional<ExamAttemptEntity> latestAttempt = attemptRepository
@@ -99,10 +106,8 @@ public class StudentExamAttemptService {
             latestAttempt
                     .filter(attempt -> attempt.getStatus()
                             == ExamAttemptStatus.IN_PROGRESS)
-                    .ifPresent(attempt -> markAutoSubmitted(
-                            attempt,
-                            serverTime
-                    ));
+                    .ifPresent(attempt -> completionService.complete(
+                            attempt, serverTime, true));
 
             throw new ResponseStatusException(
                     GONE,
@@ -142,7 +147,7 @@ public class StudentExamAttemptService {
                 authenticatedEmail
         );
 
-        Instant serverTime = Instant.now();
+        Instant serverTime = clock.instant();
         ExamAttemptEntity attempt = attemptRepository
                 .findOwnedByIdForUpdate(
                         attemptId,
@@ -168,8 +173,7 @@ public class StudentExamAttemptService {
 
         if (attempt.getStatus() == ExamAttemptStatus.IN_PROGRESS
                 && !serverTime.isBefore(effectiveDeadline)) {
-            attempt.autoSubmit(serverTime);
-            attempt = attemptRepository.saveAndFlush(attempt);
+            completionService.complete(attempt, serverTime, true);
         }
 
         List<QuestionEntity> questions = questionRepository
@@ -210,7 +214,7 @@ public class StudentExamAttemptService {
 
         validateSubmitOwnership(attempt, examId);
 
-        Instant serverTime = Instant.now();
+        Instant serverTime = clock.instant();
 
         if (attempt.getStatus() != ExamAttemptStatus.IN_PROGRESS) {
             return createSubmitResponse(attempt, serverTime);
@@ -221,16 +225,71 @@ public class StudentExamAttemptService {
                 ? attempt.getDeadlineAt()
                 : attempt.getExam().getExpiresAt();
 
-        if (serverTime.isBefore(effectiveDeadline)) {
-            attempt.submit(serverTime);
-        } else {
-            attempt.autoSubmit(serverTime);
+        completionService.complete(
+                attempt,
+                serverTime,
+                !serverTime.isBefore(effectiveDeadline)
+        );
+
+        return createSubmitResponse(attempt, serverTime);
+    }
+
+    @Transactional
+    public StudentExamResultResponse getMyResult(
+            Long examId,
+            String authenticatedEmail
+    ) {
+        if (examId == null || examId <= 0) {
+            throw new ResponseStatusException(BAD_REQUEST, "Mã bài kiểm tra phải lớn hơn 0");
+        }
+        if (authenticatedEmail == null || authenticatedEmail.isBlank()) {
+            throw new ResponseStatusException(UNAUTHORIZED, "Tài khoản chưa được xác thực");
         }
 
-        ExamAttemptEntity savedAttempt = attemptRepository
-                .saveAndFlush(attempt);
+        UserEntity student = studentUserRepository
+                .findByEmailForUpdate(authenticatedEmail)
+                .orElseThrow(() -> new ResponseStatusException(
+                        UNAUTHORIZED, "Tài khoản chưa được xác thực"));
+        if (student.getRole() != Role.STUDENT) {
+            throw new ResponseStatusException(
+                    FORBIDDEN, "Chỉ học sinh được xem kết quả bài kiểm tra");
+        }
 
-        return createSubmitResponse(savedAttempt, serverTime);
+        ExamAttemptEntity attempt = attemptRepository
+                .findFirstByExam_IdAndStudent_IdOrderByStartedAtDesc(
+                        examId, student.getId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        NOT_FOUND, "Chưa có lượt làm bài cho bài kiểm tra này"));
+
+        if (attempt.getStatus() == ExamAttemptStatus.IN_PROGRESS) {
+            Instant serverTime = clock.instant();
+            Instant effectiveDeadline = attempt.getDeadlineAt()
+                    .isBefore(attempt.getExam().getExpiresAt())
+                    ? attempt.getDeadlineAt()
+                    : attempt.getExam().getExpiresAt();
+            if (serverTime.isBefore(effectiveDeadline)) {
+                throw new ResponseStatusException(CONFLICT, "Bài kiểm tra chưa được nộp");
+            }
+            completionService.complete(attempt, serverTime, true);
+        } else if (attempt.getScore() == null) {
+            completionService.complete(
+                    attempt,
+                    attempt.getSubmittedAt() == null ? clock.instant() : attempt.getSubmittedAt(),
+                    attempt.getStatus() == ExamAttemptStatus.AUTO_SUBMITTED
+            );
+        }
+
+        AttemptResult result = completionService.summarize(attempt);
+        return new StudentExamResultResponse(
+                attempt.getId(),
+                attempt.getExam().getId(),
+                attempt.getStatus(),
+                attempt.getScore() == null ? result.score() : attempt.getScore(),
+                result.totalPoints(),
+                attempt.getSubmittedAt(),
+                result.answeredCount(),
+                result.totalQuestions()
+        );
     }
 
     private void validateSubmitRequest(
@@ -296,11 +355,16 @@ public class StudentExamAttemptService {
             ExamAttemptEntity attempt,
             Instant serverTime
     ) {
+        AttemptResult result = completionService.summarize(attempt);
         return new SubmitStudentExamResponse(
                 attempt.getId(),
                 attempt.getStatus(),
                 attempt.getSubmittedAt(),
-                serverTime
+                serverTime,
+                attempt.getScore() == null ? result.score() : attempt.getScore(),
+                result.totalPoints(),
+                result.answeredCount(),
+                result.totalQuestions()
         );
     }
 
@@ -308,6 +372,20 @@ public class StudentExamAttemptService {
             ExamEntity exam,
             Instant serverTime
     ) {
+        if (exam.getStatus() != ExamStatus.PUBLISHED) {
+            throw new ResponseStatusException(
+                    CONFLICT,
+                    "Bài kiểm tra chưa được công khai"
+            );
+        }
+
+        if (exam.getType() == ExamType.ESSAY) {
+            throw new ResponseStatusException(
+                    BAD_REQUEST,
+                    "Bài tự luận PDF không sử dụng lượt thi trực tuyến"
+            );
+        }
+
         if (serverTime.isBefore(exam.getStartAt())) {
             throw new ResponseStatusException(
                     CONFLICT,
@@ -336,7 +414,7 @@ public class StudentExamAttemptService {
         }
 
         if (!serverTime.isBefore(attempt.getDeadlineAt())) {
-            markAutoSubmitted(attempt, serverTime);
+            completionService.complete(attempt, serverTime, true);
 
             throw new ResponseStatusException(
                     GONE,
@@ -345,18 +423,6 @@ public class StudentExamAttemptService {
         }
 
         return attempt;
-    }
-
-    private void markAutoSubmitted(
-            ExamAttemptEntity attempt,
-            Instant submittedAt
-    ) {
-        attemptRepository.markAutoSubmitted(
-                attempt.getId(),
-                ExamAttemptStatus.IN_PROGRESS,
-                ExamAttemptStatus.AUTO_SUBMITTED,
-                submittedAt
-        );
     }
 
     private ExamAttemptEntity createAttempt(
@@ -375,7 +441,8 @@ public class StudentExamAttemptService {
         ExamAttemptEntity attempt = new ExamAttemptEntity(
                 exam,
                 student,
-                deadlineAt
+                deadlineAt,
+                serverTime
         );
 
         return attemptRepository.save(attempt);

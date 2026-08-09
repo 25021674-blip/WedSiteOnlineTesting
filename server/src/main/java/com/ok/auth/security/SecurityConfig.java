@@ -34,7 +34,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**", "/auth/**", "/error", "/index.html", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/ws/exams", "/ws/exams/**").permitAll()
-                        .requestMatchers("/student-exam/**").permitAll()
+                        .requestMatchers("/student-exam/**", "/student-home/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

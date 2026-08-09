@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -21,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.ok.domain.enums.ExamAttemptStatus;
 import com.ok.domain.enums.ExamType;
 import com.ok.domain.enums.QuestionType;
 import com.ok.domain.enums.Role;
@@ -57,6 +57,9 @@ class StudentExamAttemptServiceDemoTest {
     @Mock
     private StudentAnswerRepository answerRepository;
 
+    @Mock
+    private ExamAttemptCompletionService completionService;
+
     private StudentExamAttemptService service;
 
     @BeforeEach
@@ -66,7 +69,9 @@ class StudentExamAttemptServiceDemoTest {
                 examRepository,
                 attemptRepository,
                 questionRepository,
-                answerRepository
+                answerRepository,
+                completionService,
+                Clock.systemUTC()
         );
     }
 
@@ -193,11 +198,10 @@ class StudentExamAttemptServiceDemoTest {
                 student.getEmail()
         )).isInstanceOf(ResponseStatusException.class);
 
-        verify(attemptRepository).markAutoSubmitted(
-                eq(attempt.getId()),
-                eq(ExamAttemptStatus.IN_PROGRESS),
-                eq(ExamAttemptStatus.AUTO_SUBMITTED),
-                any(Instant.class)
+        verify(completionService).complete(
+                eq(attempt),
+                any(Instant.class),
+                eq(true)
         );
     }
 
@@ -230,6 +234,7 @@ class StudentExamAttemptServiceDemoTest {
                 BigDecimal.TEN,
                 ExamType.MULTIPLE_CHOICE
         );
+        exam.changeStatus(com.ok.domain.enums.ExamStatus.PUBLISHED);
         ReflectionTestUtils.setField(exam, "id", 15L);
         return exam;
     }

@@ -5,13 +5,13 @@ import java.time.Instant;
 
 import com.ok.domain.enums.ExamAttemptStatus;
 
-public record SubmitStudentExamResponse(
+public record StudentExamResultResponse(
         Long attemptId,
+        Long examId,
         ExamAttemptStatus status,
-        Instant submittedAt,
-        Instant serverTime,
         BigDecimal score,
-        BigDecimal maxScore,
+        BigDecimal totalPoints,
+        Instant submittedAt,
         int answeredCount,
         int totalQuestions
 ) {

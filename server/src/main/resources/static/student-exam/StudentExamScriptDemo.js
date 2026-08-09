@@ -3,7 +3,7 @@
 
     const SESSION_STORAGE_KEY = "onlineTestingAuthSession";
     const COMPLETION_STORAGE_KEY = "onlineTestingExamCompletion";
-    const DEFAULT_HOME_URL = "/student-exam/StudentExamDemo.html?demo=true";
+    const DEFAULT_HOME_URL = "/student-home/index.html#exams";
     const AUTOSAVE_DELAY_MILLIS = 750;
     const REQUEST_TIMEOUT_MILLIS = 12000;
     const MAX_ESSAY_LENGTH = 10000;

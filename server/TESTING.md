@@ -37,8 +37,8 @@ Instance local có schema riêng `online_testing_test`. Chạy:
 powershell -ExecutionPolicy Bypass -File .\server\mysql-local\run-mysql-tests.ps1
 ```
 
-Script gọi task `mysqlTest`, chỉ chạy nhóm `integration` trên `online_testing_test`; database
-ứng dụng `online_testing` không bị xóa hoặc thay đổi.
+Script gọi task `mysqlTest`, chạy Flyway từ schema trống rồi chạy nhóm `integration` trên
+`online_testing_test`; database ứng dụng `online_testing` không bị xóa hoặc thay đổi.
 
 Trước mỗi lần chạy, script xóa và tạo lại riêng schema `online_testing_test` để không giữ bảng
 hoặc foreign key cũ sau những lần đổi entity/package.
@@ -51,15 +51,15 @@ JaCoCo tự tạo HTML report sau task `test`:
 server/build/reports/jacoco/test/html/index.html
 ```
 
-Task `check` giữ baseline tối thiểu 60% line coverage và 40% branch coverage:
+Task `check` giữ baseline tối thiểu 65% line coverage và 45% branch coverage:
 
 ```powershell
 .\gradlew.bat :server:check
 ```
 
-Baseline sau khi hợp nhất các module student, teacher và WebSocket từ `main` là 60,39% line
-và 42,53% branch. Gate này ngăn coverage giảm thêm; khi bổ sung test cho các module mới, hãy
-nâng dần hai ngưỡng trong `server/build.gradle`.
+Kết quả sau khi hợp nhất luồng bài thi về `ExamAttempt` là 69,26% line và 50,00% branch.
+Gate hiện giữ tối thiểu 65% line và 45% branch; có thể nâng dần hai ngưỡng trong
+`server/build.gradle` khi bổ sung test WebSocket và teacher UI.
 
 ## Phạm vi hiện có
 
@@ -71,4 +71,5 @@ nâng dần hai ngưỡng trong `server/build.gradle`.
 - PDF validation, path confinement, replace/delete/cleanup file.
 - Unique constraints và optimistic versioning trên database.
 - Cùng một suite được xác minh trên H2 và MySQL 8.
-- Một auth E2E flow chạy qua embedded HTTP server trên random port.
+- Hai E2E flow chạy qua embedded HTTP server trên random port: auth và toàn bộ luồng
+  bắt đầu thi -> lưu đáp án -> nộp -> đọc kết quả.

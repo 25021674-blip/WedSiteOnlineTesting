@@ -228,7 +228,7 @@
             storeSession(session);
 
             if (session.user.role === "STUDENT") {
-                window.location.assign("/index.html#home");
+                window.location.assign("/student-home/index.html#home");
                 return;
             }
 

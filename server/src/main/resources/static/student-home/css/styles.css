@@ -910,6 +910,13 @@ select:focus-visible {
     border-top: 1px solid #eff0f5;
 }
 
+.exam-card__footer > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
 .exam-card__footer small {
     color: var(--muted);
     font-size: 9px;
@@ -1432,6 +1439,10 @@ select:focus-visible {
     }
 
     .exam-card__footer .button {
+        width: 100%;
+    }
+
+    .exam-card__footer > div {
         width: 100%;
     }
 

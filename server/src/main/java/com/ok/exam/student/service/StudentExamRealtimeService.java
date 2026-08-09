@@ -8,6 +8,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import java.time.Duration;
+import java.time.Clock;
 import java.time.Instant;
 
 import org.springframework.stereotype.Service;
@@ -31,6 +32,8 @@ import lombok.RequiredArgsConstructor;
 public class StudentExamRealtimeService {
 
     private final StudentExamAttemptRepository attemptRepository;
+    private final ExamAttemptCompletionService completionService;
+    private final Clock clock;
     private final AttemptViolationRepository violationRepository;
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
@@ -40,7 +43,7 @@ public class StudentExamRealtimeService {
     ) {
         validateIdentity(attemptId, authenticatedEmail);
 
-        Instant serverTime = Instant.now();
+        Instant serverTime = clock.instant();
         ExamAttemptEntity attempt = findActiveOwnedAttempt(
                 attemptId,
                 authenticatedEmail,
@@ -78,7 +81,7 @@ public class StudentExamRealtimeService {
         validateIdentity(attemptId, authenticatedEmail);
         validateViolationRequest(request);
 
-        Instant serverTime = Instant.now();
+        Instant serverTime = clock.instant();
         ExamAttemptEntity attempt = findActiveOwnedAttempt(
                 attemptId,
                 authenticatedEmail,
@@ -177,7 +180,7 @@ public class StudentExamRealtimeService {
         }
 
         if (!serverTime.isBefore(getEffectiveDeadline(attempt))) {
-            attempt.autoSubmit(serverTime);
+            completionService.complete(attempt, serverTime, true);
 
             throw new ResponseStatusException(
                     GONE,

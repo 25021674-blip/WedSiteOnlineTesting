@@ -116,7 +116,7 @@ export async function getExams() {
 async function getMyExamResult(exam) {
     const path = exam.type === "ESSAY"
         ? `/exams/${exam.id}/essay-submissions/me`
-        : `/exams/${exam.id}/quiz-submissions/me`;
+        : `/student/exams/${exam.id}/attempts/me`;
     try {
         return await request(path);
     } catch (error) {
@@ -135,4 +135,39 @@ export async function getMyResults(exams) {
         }
     }));
     return Object.fromEntries(entries);
+}
+
+export async function downloadEssayAssignment(examId) {
+    const token = getAuthToken();
+    const response = await fetch(`${API_BASE_URL}/exams/${examId}/essay-assignment-file`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+    });
+    if (!response.ok) {
+        throw new ApiError("Không thể tải file đề tự luận.", response.status);
+    }
+
+    const blob = await response.blob();
+    const disposition = response.headers.get("content-disposition") || "";
+    const encodedName = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    const plainName = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+    const fileName = encodedName
+        ? decodeURIComponent(encodedName)
+        : (plainName || `de-tu-luan-${examId}.pdf`);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+export async function submitEssayPdf(examId, file) {
+    const form = new FormData();
+    form.append("file", file);
+    return request(`/exams/${examId}/essay-submissions`, {
+        method: "POST",
+        body: form
+    });
 }

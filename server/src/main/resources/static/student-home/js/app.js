@@ -2,9 +2,11 @@ import {
     ApiError,
     clearAuthSession,
     getAuthToken,
+    downloadEssayAssignment,
     getExams,
     getMyResults,
     getStoredUser,
+    submitEssayPdf,
     readJwtPayload
 } from "./api.js";
 
@@ -296,10 +298,47 @@ function examCard(exam) {
             </div>
             <div class="exam-card__footer">
                 <small>${exam.durationMinutes ? `${exam.durationMinutes} phút` : "Bài nộp PDF"}</small>
-                <button class="button button--soft" type="button" data-action="details" data-exam-id="${exam.id}">Xem thông tin</button>
+                <div>${examActions(exam, status)}</div>
             </div>
         </article>
     `;
+}
+
+function examActions(exam, status) {
+    const details = `<button class="button button--soft" type="button" data-action="details" data-exam-id="${exam.id}">Xem thông tin</button>`;
+    if (exam.type === "ESSAY") {
+        if (status.key !== "OPEN") return details;
+        return `${details}<button class="button button--soft" type="button" data-action="download-essay" data-exam-id="${exam.id}">Tải đề PDF</button><button class="button" type="button" data-action="submit-essay" data-exam-id="${exam.id}">Nộp bài PDF</button>`;
+    }
+
+    if (status.key === "OPEN") {
+        const params = new URLSearchParams({
+            examId: String(exam.id),
+            homeUrl: "/student-home/index.html#exams"
+        });
+        return `${details}<a class="button button--primary" href="/student-exam/StudentExamDemo.html?${params.toString()}">Bắt đầu / tiếp tục</a>`;
+    }
+
+    if (status.key === "SUBMITTED") {
+        const result = state.results[String(exam.id)];
+        const params = new URLSearchParams({
+            attemptId: String(result.attemptId || ""),
+            status: result.status || "SUBMITTED",
+            examTitle: exam.title,
+            examType: exam.type,
+            answeredCount: String(result.answeredCount || 0),
+            totalQuestions: String(result.totalQuestions || 0),
+            submittedAt: result.submittedAt || "",
+            automatic: String(result.status === "AUTO_SUBMITTED"),
+            demo: "false",
+            homeUrl: "/student-home/index.html#scores"
+        });
+        if (result.score != null) params.set("score", String(result.score));
+        if (result.totalPoints != null) params.set("maxScore", String(result.totalPoints));
+        return `${details}<a class="button button--primary" href="/student-exam/StudentExamResultDemo.html?${params.toString()}">Xem kết quả</a>`;
+    }
+
+    return details;
 }
 
 function filteredExams() {
@@ -518,6 +557,7 @@ function renderExamResults() {
         ? `<div class="exam-grid">${exams.map(examCard).join("")}</div>`
         : emptyState("Không tìm thấy bài kiểm tra", state.exams.length ? "Hãy thử từ khóa hoặc bộ lọc khác." : "Khi giáo viên công khai bài, bài kiểm tra sẽ xuất hiện tại đây.");
     bindDetailButtons();
+    bindExamActionButtons();
 }
 
 function bindDetailButtons() {
@@ -526,9 +566,50 @@ function bindDetailButtons() {
     });
 }
 
+function bindExamActionButtons() {
+    document.querySelectorAll('[data-action="download-essay"]').forEach(button => {
+        button.addEventListener("click", async () => {
+            button.disabled = true;
+            try {
+                await downloadEssayAssignment(button.dataset.examId);
+            } catch (error) {
+                showToast(error instanceof ApiError ? error.message : "Không thể tải đề PDF.");
+            } finally {
+                button.disabled = false;
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-action="submit-essay"]').forEach(button => {
+        button.addEventListener("click", () => chooseAndSubmitEssay(button));
+    });
+}
+
+function chooseAndSubmitEssay(button) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/pdf,.pdf";
+    input.addEventListener("change", async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        button.disabled = true;
+        try {
+            await submitEssayPdf(button.dataset.examId, file);
+            showToast("Đã nộp bài tự luận thành công.");
+            await loadData();
+        } catch (error) {
+            showToast(error instanceof ApiError ? error.message : "Không thể nộp bài PDF.");
+        } finally {
+            button.disabled = false;
+        }
+    }, { once: true });
+    input.click();
+}
+
 function bindSceneEvents() {
     document.querySelector('[data-action="reload"]')?.addEventListener("click", loadData);
     bindDetailButtons();
+    bindExamActionButtons();
 
     document.querySelector("#exam-search")?.addEventListener("input", event => {
         state.query = event.target.value;
@@ -563,7 +644,9 @@ function openExamDialog(examId) {
                 <div class="detail-item"><small>Giáo viên</small><strong>${escapeHtml(exam.createdByName || "Chưa cập nhật")}</strong></div>
                 <div class="detail-item"><small>Tệp đề</small><strong>${escapeHtml(exam.assignmentFile?.originalFileName || (exam.type === "ESSAY" ? "Chưa cập nhật" : "Không áp dụng"))}</strong></div>
             </div>
-            <div class="dialog-note">Phạm vi giao diện hiện tại chỉ hiển thị thông tin bài kiểm tra. Màn hình làm và nộp bài sẽ được ghép ở phần chức năng riêng.</div>
+            <div class="dialog-note">${exam.type === "MULTIPLE_CHOICE"
+                ? "Dùng nút trên thẻ bài kiểm tra để bắt đầu, tiếp tục hoặc xem kết quả."
+                : "Bài tự luận PDF được quản lý theo hạn nộp và tệp đề đính kèm."}</div>
         </div>
     `;
     dialog.showModal();

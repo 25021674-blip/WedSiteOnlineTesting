@@ -28,13 +28,13 @@ import com.ok.entity.ExamEntity;
 import com.ok.entity.UserEntity;
 import com.ok.entity.QuestionOptionEntity;
 import com.ok.entity.QuestionEntity;
-import com.ok.exam.quiz.service.QuizSubmissionService;
 import com.ok.repository.EssayAssignmentFileRepository;
 import com.ok.repository.EssaySubmissionRepository;
 import com.ok.repository.ExamRepository;
 import com.ok.repository.QuestionRepository;
-import com.ok.repository.QuizSubmissionAnswerRepository;
-import com.ok.repository.QuizSubmissionRepository;
+import com.ok.repository.AttemptViolationRepository;
+import com.ok.repository.StudentAnswerRepository;
+import com.ok.repository.StudentExamAttemptRepository;
 import com.ok.repository.UserRepository;
 
 import tools.jackson.databind.ObjectMapper;
@@ -57,16 +57,17 @@ abstract class AbstractApiIntegrationTest {
     @Autowired protected UserRepository userRepository;
     @Autowired protected ExamRepository examRepository;
     @Autowired protected QuestionRepository questionRepository;
-    @Autowired protected QuizSubmissionRepository quizSubmissionRepository;
-    @Autowired protected QuizSubmissionAnswerRepository quizAnswerRepository;
+    @Autowired protected StudentExamAttemptRepository attemptRepository;
+    @Autowired protected StudentAnswerRepository studentAnswerRepository;
+    @Autowired protected AttemptViolationRepository attemptViolationRepository;
     @Autowired protected EssaySubmissionRepository essaySubmissionRepository;
     @Autowired protected EssayAssignmentFileRepository assignmentFileRepository;
-    @Autowired protected QuizSubmissionService quizSubmissionService;
 
     @BeforeEach
     void cleanDatabase() {
-        quizAnswerRepository.deleteAllInBatch();
-        quizSubmissionRepository.deleteAllInBatch();
+        attemptViolationRepository.deleteAllInBatch();
+        studentAnswerRepository.deleteAllInBatch();
+        attemptRepository.deleteAllInBatch();
         essaySubmissionRepository.deleteAllInBatch();
         assignmentFileRepository.deleteAllInBatch();
         questionRepository.deleteAll();
@@ -98,7 +99,7 @@ abstract class AbstractApiIntegrationTest {
             LocalDateTime start, LocalDateTime deadline, Integer duration) {
         ExamEntity exam = new ExamEntity(owner, type.name() + " Exam", "Description",
                 start.atZone(TEST_ZONE).toInstant(), deadline.atZone(TEST_ZONE).toInstant(),
-                duration == null ? 60 : duration, BigDecimal.TEN, type);
+                duration, BigDecimal.TEN, type);
         exam.changeStatus(status);
         return examRepository.save(exam);
     }

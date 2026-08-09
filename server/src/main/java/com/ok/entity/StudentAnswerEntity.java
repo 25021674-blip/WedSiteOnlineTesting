@@ -97,6 +97,14 @@ public class StudentAnswerEntity {
         updateRevision(newClientRevision, newUpdatedAt);
     }
 
+    public void recordAutomaticGrade(
+            boolean correct,
+            BigDecimal score
+    ) {
+        this.correct = correct;
+        this.score = Objects.requireNonNull(score);
+    }
+
     private void updateRevision(
             Long newClientRevision,
             Instant newUpdatedAt

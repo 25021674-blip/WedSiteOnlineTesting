@@ -1,109 +1,80 @@
 # API bài kiểm tra - bản đồ đọc code
 
-## 1. Bài toán tổng quát
+## Kiến trúc hiện tại
 
-Hệ thống có hai loại bài kiểm tra:
+Hệ thống có hai luồng nghiệp vụ:
 
-- `MULTIPLE_CHOICE`: học sinh chọn đáp án, server tự chấm.
-- `ESSAY`: học sinh tải một file PDF lên trước hạn, giáo viên tải xuống và chấm.
+- `MULTIPLE_CHOICE`: làm bài trực tuyến, lưu từng đáp án và tự chấm.
+- `ESSAY`: tải đề PDF, học sinh nộp PDF và giáo viên chấm thủ công.
 
-Mọi bài kiểm tra đều đi qua `ExamEntity`. Sau đó luồng rẽ sang nhóm `multiple` hoặc `essay`.
+Mọi đề thi dùng `ExamEntity`. Lượt làm bài trực tuyến chỉ có một nguồn dữ liệu:
 
-## 2. Cách chọn file để xây dựng một API
+```text
+ExamAttemptEntity
+  -> StudentAnswerEntity
+  -> AttemptViolationEntity
+```
 
-Luôn suy nghĩ theo thứ tự:
+Các entity `QuizSubmissionEntity` và `QuizSubmissionAnswerEntity` cũ đã được loại bỏ.
 
-1. Xác định dữ liệu cần lưu -> `Entity` và enum.
-2. Xác định cách truy vấn dữ liệu -> `Repository`.
-3. Xác định JSON vào/ra -> request/response trong `dto`.
-4. Viết quy tắc nghiệp vụ -> `Service`.
-5. Mở URL HTTP cho client -> `Controller`.
-6. Chặn truy cập sai -> security và kiểm tra role/ownership trong service.
-7. Viết test cho trường hợp đúng và sai.
-
-Khi đọc một request đang chạy, đọc theo chiều ngược lại:
-
-`Controller -> DTO request -> Service -> Repository -> Entity -> DTO response`.
-
-## 3. Thứ tự đọc toàn bộ code
+## Thứ tự đọc code
 
 ### Nền tảng
 
-1. `dto/Role.java`
-2. `dto/ExamType.java`
-3. `dto/ExamStatus.java`
-4. `entity/UserEntity.java`
-5. `entity/ExamEntity.java`
+1. `domain/enums/`
+2. `entity/UserEntity.java`
+3. `entity/ExamEntity.java`
+4. `auth/security/`
 
-### API quản lý đề
+### Quản lý đề và câu hỏi
 
-6. `dto/CreateExamRequest.java`
-7. `dto/UpdateExamRequest.java`
-8. `dto/UpdateExamStatusRequest.java`
-9. `dto/ExamResponse.java`
-10. `repository/ExamRepository.java`
-11. `exam/service/ExamService.java`
-12. `exam/controller/ExamController.java`
+1. `dto/request/teacher/`
+2. `exam/service/ExamService.java`
+3. `exam/controller/ExamController.java`
+4. `exam/quiz/service/QuestionService.java`
+5. `exam/quiz/controller/QuestionController.java`
 
-### Nhánh tự luận
+### Học sinh làm bài trực tuyến
 
-13. `essay/entity/EssayAssignmentFileEntity.java`
-14. `repository/EssayAssignmentFileRepository.java`
-15. `dto/EssayAssignmentFileResponse.java`
-16. `essay/service/FileStorageService.java`
-17. `essay/service/EssayAssignmentFileService.java`
-18. `essay/controller/EssayAssignmentFileController.java`
-19. `essay/entity/EssaySubmissionEntity.java`
-20. `repository/EssaySubmissionRepository.java`
-21. `dto/EssaySubmissionResponse.java`
-22. `dto/GradeEssayRequest.java`
-23. `essay/service/EssaySubmissionService.java`
-24. `essay/controller/EssaySubmissionController.java`
+1. `entity/ExamAttemptEntity.java`
+2. `entity/StudentAnswerEntity.java`
+3. `dto/request/student/`
+4. `exam/student/service/StudentExamAttemptService.java`
+5. `exam/student/service/StudentAnswerSaveService.java`
+6. `exam/student/service/ExamAttemptCompletionService.java`
+7. `exam/student/controller/`
+8. `exam/student/scheduler/ExamAttemptAutoSubmitScheduler.java`
 
-### Nhánh trắc nghiệm
+### Tự luận PDF
 
-20. `quiz/entity/QuestionEntity.java`
-21. `quiz/entity/QuestionOptionEntity.java`
-22. `quiz/entity/QuizSubmissionEntity.java`
-23. `quiz/entity/QuizSubmissionAnswerEntity.java`
-24. Ba repository tương ứng trong `repository/` (lựa chọn được lưu qua cascade của câu hỏi).
-25. `dto/AnswerOptionRequest.java`
-26. `dto/CreateQuestionRequest.java`
-27. Các response có chữ `Student` và `Management`.
-28. `quiz/service/QuestionService.java`
-29. `quiz/controller/QuestionController.java`
-30. `dto/SelectedAnswerRequest.java`
-31. `dto/SubmitQuizRequest.java`
-32. `dto/QuizResultResponse.java`
-33. `quiz/service/QuizSubmissionService.java`
-34. `quiz/controller/QuizSubmissionController.java`
+1. `entity/EssayAssignmentFileEntity.java`
+2. `entity/EssaySubmissionEntity.java`
+3. `exam/essay/service/`
+4. `exam/essay/controller/`
 
-### Xác thực, lỗi và cấu hình
+### Database
 
-35. `auth/security/JwtAuthenticationFilter.java`
-36. `auth/security/SecurityConfig.java`
-37. `auth/exceptionHandle/AuthExceptionHandler.java`
-38. `resources/application.properties`
-39. Các test trong `src/test/java`.
+Flyway quản lý schema trong `resources/db/migration/`. Hibernate chạy với
+`ddl-auto=validate`, chỉ đối chiếu entity và schema chứ không tự sửa database.
 
-## 4. Các URL chính
+## API chính
 
 - Quản lý đề: `/api/exams`
 - Quản lý câu hỏi: `/api/exams/{examId}/questions`
-- Học sinh xem đề trắc nghiệm: `/api/exams/{examId}/quiz`
-- Nộp trắc nghiệm: `/api/exams/{examId}/quiz-submissions`
+- Bắt đầu/tiếp tục: `POST /api/student/exams/{examId}/attempts/start`
+- Lưu một đáp án: `PUT /api/student/exam-attempts/{attemptId}/questions/{questionId}/answer`
+- Nộp bài: `POST /api/student/exams/{examId}/attempts/{attemptId}/submit`
+- Kết quả của học sinh: `GET /api/student/exams/{examId}/attempts/me`
 - Nộp PDF: `/api/exams/{examId}/essay-submissions`
-- Tải PDF: `/api/essay-submissions/{submissionId}/file`
-- Chấm tự luận: `/api/essay-submissions/{submissionId}/grade`
+- Giáo viên xem bài: `/api/teacher/exams/{examId}/submissions`
 
-## 5. Lưu ý khi chạy thử
+## Quy tắc thời lượng
 
-API đăng ký hiện tạo tài khoản `STUDENT`. Muốn thử chức năng giáo viên trong môi trường local,
-đổi role của một tài khoản đã đăng ký trong MySQL:
+- Đề trực tuyến phải có `durationMinutes > 0`.
+- Đề `ESSAY` phải có `durationMinutes = null` và dùng deadline chung.
+- Database cho phép `duration_minutes` null; `ExamService` chịu trách nhiệm kiểm tra theo loại đề.
 
-```sql
-UPDATE users SET role = 'TEACHER' WHERE email = 'teacher@example.com';
-```
+## Test
 
-Đăng nhập lại sau khi đổi role để nhận JWT mới. Tạo đề xong phải đổi trạng thái sang
-`PUBLISHED` thì học sinh mới xem hoặc nộp được.
+Xem `TESTING.md`. Integration test H2 chạy nhanh; script MySQL tạo lại riêng
+`online_testing_test`, chạy Flyway và xác minh cùng suite trên MySQL 8.

@@ -7,6 +7,7 @@ import static org.springframework.http.HttpStatus.GONE;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,6 +38,8 @@ public class StudentAnswerSaveService {
     private final StudentExamAttemptRepository attemptRepository;
     private final StudentQuestionRepository questionRepository;
     private final StudentAnswerRepository answerRepository;
+    private final ExamAttemptCompletionService completionService;
+    private final Clock clock;
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public SaveStudentAnswerResponse saveAnswer(
@@ -52,7 +55,7 @@ public class StudentAnswerSaveService {
                 authenticatedEmail
         );
 
-        Instant serverTime = Instant.now();
+        Instant serverTime = clock.instant();
 
         ExamAttemptEntity attempt = attemptRepository
                 .findOwnedByIdForUpdate(
@@ -186,7 +189,7 @@ public class StudentAnswerSaveService {
                 : attempt.getExam().getExpiresAt();
 
         if (!serverTime.isBefore(effectiveDeadline)) {
-            attempt.autoSubmit(serverTime);
+            completionService.complete(attempt, serverTime, true);
 
             throw new ResponseStatusException(
                     GONE,

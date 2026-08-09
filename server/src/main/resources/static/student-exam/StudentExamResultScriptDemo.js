@@ -2,7 +2,7 @@
     "use strict";
 
     const COMPLETION_STORAGE_KEY = "onlineTestingExamCompletion";
-    const DEFAULT_HOME_URL = "/student-exam/StudentExamDemo.html?demo=true";
+    const DEFAULT_HOME_URL = "/student-home/index.html#scores";
     const EXAM_TYPES = new Set(["MULTIPLE_CHOICE", "ESSAY", "MIXED"]);
 
     const elements = {

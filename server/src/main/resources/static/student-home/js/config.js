@@ -1,7 +1,7 @@
 export const API_BASE_URL = (
     window.EDU_PORTAL_CONFIG?.apiBaseUrl
     || localStorage.getItem("apiBaseUrl")
-    || "http://localhost:8080/api"
+    || `${window.location.origin}/api`
 ).replace(/\/+$/, "");
 
 export const AUTH_STORAGE_KEYS = [

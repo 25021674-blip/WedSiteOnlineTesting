@@ -52,7 +52,7 @@ public class ExamEntity {
     @Column(name = "expires_at", nullable = false)
     private Instant expiresAt;
 
-    @Column(name = "duration_minutes", nullable = false)
+    @Column(name = "duration_minutes")
     private Integer durationMinutes;
 
     @Column(name = "max_score", nullable = false, precision = 10, scale = 2)

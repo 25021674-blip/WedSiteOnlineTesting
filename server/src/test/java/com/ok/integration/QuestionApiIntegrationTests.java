@@ -20,7 +20,7 @@ import com.ok.dto.request.teacher.CreateQuestionRequest;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.UserEntity;
 import com.ok.entity.QuestionEntity;
-import com.ok.entity.QuizSubmissionEntity;
+import com.ok.entity.ExamAttemptEntity;
 
 class QuestionApiIntegrationTests extends AbstractApiIntegrationTest {
 
@@ -141,8 +141,12 @@ class QuestionApiIntegrationTests extends AbstractApiIntegrationTest {
                         .header("Authorization", bearer(student)))
                 .andExpect(status().isNotFound());
 
-        quizSubmissionRepository.saveAndFlush(new QuizSubmissionEntity(exam, student,
-                NOW.minusMinutes(1), NOW.plusMinutes(20)));
+        attemptRepository.saveAndFlush(new ExamAttemptEntity(
+                exam,
+                student,
+                TEST_INSTANT.plusSeconds(1200),
+                TEST_INSTANT.minusSeconds(60)
+        ));
         mvc.perform(get("/api/exams/{id}/quiz", exam.getId())
                         .header("Authorization", bearer(student)))
                 .andExpect(status().isOk())

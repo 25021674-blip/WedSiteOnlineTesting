@@ -2,6 +2,7 @@ package com.ok.exam.quiz.service;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.ExamStatus;
+import com.ok.domain.enums.ExamAttemptStatus;
 import com.ok.domain.enums.ExamType;
 import com.ok.domain.enums.QuestionType;
 import com.ok.domain.enums.Role;
@@ -22,11 +24,13 @@ import com.ok.dto.response.student.QuestionStudentResponse;
 import com.ok.dto.response.teacher.AnswerOptionManagementResponse;
 import com.ok.dto.response.teacher.QuestionManagementResponse;
 import com.ok.entity.QuestionOptionEntity;
+import com.ok.entity.ExamAttemptEntity;
 import com.ok.entity.ExamEntity;
 import com.ok.entity.QuestionEntity;
 import com.ok.entity.UserEntity;
 import com.ok.exam.service.ExamService;
 import com.ok.repository.QuestionRepository;
+import com.ok.repository.StudentExamAttemptRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -34,7 +38,7 @@ import lombok.RequiredArgsConstructor;
 public class QuestionService {
     private final QuestionRepository repository;
     private final ExamService examService;
-    private final QuizSubmissionService submissionService;
+    private final StudentExamAttemptRepository attemptRepository;
     private final Clock clock;
 
     @Transactional
@@ -103,7 +107,7 @@ public class QuestionService {
         UserEntity user = examService.currentUser(email);
         if (user.getRole() != Role.STUDENT) throw forbidden("Chỉ học sinh sử dụng nội dung đề này");
         requireQuiz(exam);
-        submissionService.requireActiveAttempt(examId, user);
+        requireActiveAttempt(examId, user);
         LocalDateTime now = LocalDateTime.now(clock);
         if (exam.getStatus() != ExamStatus.PUBLISHED || now.isBefore(exam.getStartTime()) || now.isAfter(exam.getDeadline())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài kiểm tra chưa mở hoặc đã kết thúc");
@@ -123,6 +127,24 @@ public class QuestionService {
 
     private void requireQuiz(ExamEntity exam) {
         if (exam.getType() != ExamType.MULTIPLE_CHOICE) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đây không phải đề trắc nghiệm");
+    }
+
+    private void requireActiveAttempt(Long examId, UserEntity student) {
+        ExamAttemptEntity attempt = attemptRepository
+                .findFirstByExam_IdAndStudent_IdOrderByStartedAtDesc(
+                        examId, student.getId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Chưa bắt đầu lượt làm bài"));
+        Instant now = clock.instant();
+        Instant effectiveDeadline = attempt.getDeadlineAt()
+                .isBefore(attempt.getExam().getExpiresAt())
+                ? attempt.getDeadlineAt()
+                : attempt.getExam().getExpiresAt();
+        if (attempt.getStatus() != ExamAttemptStatus.IN_PROGRESS
+                || !now.isBefore(effectiveDeadline)) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Lượt làm bài không còn hoạt động");
+        }
     }
 
     private void validateOptions(List<AnswerOptionRequest> options) {

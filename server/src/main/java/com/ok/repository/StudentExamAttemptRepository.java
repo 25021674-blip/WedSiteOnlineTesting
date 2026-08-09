@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -37,42 +36,25 @@ public interface StudentExamAttemptRepository
             @Param("studentEmail") String studentEmail
     );
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @EntityGraph(attributePaths = {"exam", "student"})
     @Query("""
-            UPDATE ExamAttemptEntity attempt
-            SET attempt.status = :newStatus,
-                attempt.submittedAt = :submittedAt,
-                attempt.version = attempt.version + 1
+            SELECT attempt
+            FROM ExamAttemptEntity attempt
             WHERE attempt.id = :attemptId
-              AND attempt.status = :expectedStatus
             """)
-    int markAutoSubmitted(
-            @Param("attemptId") Long attemptId,
-            @Param("expectedStatus") ExamAttemptStatus expectedStatus,
-            @Param("newStatus") ExamAttemptStatus newStatus,
-            @Param("submittedAt") Instant submittedAt
+    Optional<ExamAttemptEntity> findByIdForUpdate(
+            @Param("attemptId") Long attemptId
     );
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-            UPDATE ExamAttemptEntity attempt
-            SET attempt.status = :newStatus,
-                attempt.submittedAt = :serverTime,
-                attempt.version = attempt.version + 1
-            WHERE attempt.status = :expectedStatus
-              AND (
-                    attempt.deadlineAt <= :serverTime
-                    OR EXISTS (
-                        SELECT exam.id
-                        FROM ExamEntity exam
-                        WHERE exam = attempt.exam
-                          AND exam.expiresAt <= :serverTime
-                    )
-              )
+            SELECT attempt.id
+            FROM ExamAttemptEntity attempt
+            WHERE attempt.status = :status
+              AND (attempt.deadlineAt <= :serverTime OR attempt.exam.expiresAt <= :serverTime)
             """)
-    int markExpiredAttemptsAutoSubmitted(
-            @Param("expectedStatus") ExamAttemptStatus expectedStatus,
-            @Param("newStatus") ExamAttemptStatus newStatus,
+    java.util.List<Long> findExpiredAttemptIds(
+            @Param("status") ExamAttemptStatus status,
             @Param("serverTime") Instant serverTime
     );
 

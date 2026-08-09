@@ -146,9 +146,9 @@ public class ExamService {
     }
 
     private void validateDuration(ExamType type, Integer durationMinutes) {
-        if (type == ExamType.MULTIPLE_CHOICE && (durationMinutes == null || durationMinutes <= 0)) {
+        if (type != ExamType.ESSAY && (durationMinutes == null || durationMinutes <= 0)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Đề trắc nghiệm phải có thời lượng làm bài lớn hơn 0");
+                    "Đề thi trực tuyến phải có thời lượng làm bài lớn hơn 0");
         }
         if (type == ExamType.ESSAY && durationMinutes != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
