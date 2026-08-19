@@ -89,9 +89,28 @@ public class EssayAssignmentFileService {
         requireEssay(exam);
         boolean manager = user.getRole() == Role.ADMIN || exam.getCreatedBy().getId().equals(user.getId());
         if (manager) return;
+        if (user.getRole() == Role.STUDENT) {
+            examService.requireAssignedStudent(exam, user);
+            if (exam.isRequireFullscreen()
+                    || exam.isTrackTabSwitches()) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Bài kiểm tra có giám sát phải dùng màn hình làm bài trực tuyến"
+                );
+            }
+        }
         LocalDateTime now = LocalDateTime.now();
+        LocalDateTime effectiveDeadline = exam.getDeadline();
+        if (exam.isTimeLimitEnabled()) {
+            LocalDateTime durationDeadline = exam.getStartTime()
+                    .plusMinutes(exam.getDurationMinutes());
+            if (durationDeadline.isBefore(effectiveDeadline)) {
+                effectiveDeadline = durationDeadline;
+            }
+        }
         if (user.getRole() != Role.STUDENT || exam.getStatus() != ExamStatus.PUBLISHED
-                || now.isBefore(exam.getStartTime()) || now.isAfter(exam.getDeadline())) {
+                || now.isBefore(exam.getStartTime())
+                || !now.isBefore(effectiveDeadline)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Đề tự luận chưa mở, đã kết thúc hoặc bạn không có quyền truy cập");
         }

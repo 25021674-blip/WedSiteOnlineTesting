@@ -9,6 +9,12 @@ import com.ok.domain.enums.QuestionType;
 
 public record StudentExamScreenResponse(
         Long attemptId,
+        Integer attemptNumber,
+        int maxAttempts,
+        int remainingAttempts,
+        boolean timeLimitEnabled,
+        boolean requireFullscreen,
+        boolean trackTabSwitches,
         ExamInfo exam,
         ExamAttemptStatus status,
         Instant serverTime,
@@ -24,7 +30,8 @@ public record StudentExamScreenResponse(
             Long id,
             String title,
             String description,
-            ExamType type
+            ExamType type,
+            java.math.BigDecimal maxScore
     ) {
     }
 

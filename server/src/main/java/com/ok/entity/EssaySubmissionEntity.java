@@ -10,7 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "essay_submissions", uniqueConstraints = @UniqueConstraint(
-        columnNames = {"exam_id", "student_id"}
+        name = "uk_essay_submission_exam_student_number",
+        columnNames = {"exam_id", "student_id", "attempt_number"}
 ))
 public class EssaySubmissionEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,6 +24,9 @@ public class EssaySubmissionEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "student_id", nullable = false)
     private UserEntity student;
+
+    @Column(name = "attempt_number", nullable = false, updatable = false)
+    private Integer attemptNumber = 1;
 
     @Column(nullable = false, length = 255)
     private String originalFileName;
@@ -46,8 +50,21 @@ public class EssaySubmissionEntity {
 
     public EssaySubmissionEntity(ExamEntity exam, UserEntity student, String originalFileName,
                                  String storedFileName, String storagePath, long fileSize) {
+        this(exam, student, 1, originalFileName, storedFileName, storagePath, fileSize);
+    }
+
+    public EssaySubmissionEntity(
+            ExamEntity exam,
+            UserEntity student,
+            Integer attemptNumber,
+            String originalFileName,
+            String storedFileName,
+            String storagePath,
+            long fileSize
+    ) {
         this.exam = exam;
         this.student = student;
+        this.attemptNumber = attemptNumber;
         this.originalFileName = originalFileName;
         this.storedFileName = storedFileName;
         this.storagePath = storagePath;

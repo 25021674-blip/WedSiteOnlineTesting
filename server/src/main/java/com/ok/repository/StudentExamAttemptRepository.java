@@ -24,6 +24,14 @@ public interface StudentExamAttemptRepository
                     Long studentId
             );
 
+    Optional<ExamAttemptEntity>
+            findFirstByExam_IdAndStudent_IdOrderByAttemptNumberDesc(
+                    Long examId,
+                    Long studentId
+            );
+
+    long countByExam_IdAndStudent_Id(Long examId, Long studentId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @EntityGraph(attributePaths = {"exam", "student"})
     @Query("""

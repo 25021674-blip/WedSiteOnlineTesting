@@ -24,6 +24,7 @@ import com.ok.entity.EssayAssignmentFileEntity;
 import com.ok.exam.essay.service.FileStorageService;
 import com.ok.exam.exception.ExamNotFoundException;
 import com.ok.repository.EssayAssignmentFileRepository;
+import com.ok.repository.ExamRecipientRepositoryDemo;
 import com.ok.repository.ExamRepository;
 import com.ok.repository.UserRepository;
 import com.ok.repository.QuestionRepository;
@@ -38,6 +39,7 @@ public class ExamService {
     private final QuestionRepository questionRepository;
     private final EssayAssignmentFileRepository assignmentFileRepository;
     private final FileStorageService storageService;
+    private final ExamRecipientRepositoryDemo examRecipientRepository;
 
     @Transactional
     public ExamResponse createExam(CreateExamRequest request, String email) {
@@ -61,7 +63,10 @@ public class ExamService {
         } else if (user.getRole() == Role.TEACHER) {
             exams = examRepository.findByCreatedByIdOrderByCreatedAtDesc(user.getId());
         } else {
-            exams = examRepository.findByStatusOrderByCreatedAtDesc(ExamStatus.PUBLISHED);
+            exams = examRecipientRepository.findAssignedExams(
+                    user.getId(),
+                    ExamStatus.PUBLISHED
+            );
         }
         return exams.stream().map(this::toResponse).toList();
     }
@@ -69,14 +74,18 @@ public class ExamService {
     @Transactional(readOnly = true)
     public ExamResponse getExamById(Long id, String email) {
         ExamEntity exam = findExam(id);
-        requireCanView(exam, currentUser(email));
+        UserEntity user = currentUser(email);
+        requireCanView(exam, user);
+        if (user.getRole() == Role.STUDENT) {
+            requireAssignedStudent(exam, user);
+        }
         return toResponse(exam);
     }
 
     @Transactional
     public ExamResponse updateExam(Long id, UpdateExamRequest request, String email) {
         validateTime(request.startTime(), request.deadline());
-        ExamEntity exam = findExam(id);
+        ExamEntity exam = findExamForUpdate(id);
         requireOwnerOrAdmin(exam, currentUser(email));
         requireDraft(exam);
         validateDuration(request.durationMinutes());
@@ -87,8 +96,12 @@ public class ExamService {
 
     @Transactional
     public ExamResponse changeStatus(Long id, ExamStatus status, String email) {
-        ExamEntity exam = findExam(id);
+        ExamEntity exam = findExamForUpdate(id);
         requireOwnerOrAdmin(exam, currentUser(email));
+        if (exam.getStatus() == status) {
+            return toResponse(exam);
+        }
+        validateStatusTransition(exam.getStatus(), status);
         if (status == ExamStatus.PUBLISHED) validateReadyToPublish(exam);
         exam.changeStatus(status);
         return toResponse(exam);
@@ -106,11 +119,18 @@ public class ExamService {
             assignmentFileRepository.flush();
             storageService.deleteAssignmentQuietly(path);
         });
+        examRecipientRepository.deleteByExam_Id(id);
+        examRecipientRepository.flush();
         examRepository.delete(exam);
     }
 
     public ExamEntity findExam(Long id) {
         return examRepository.findById(id).orElseThrow(() -> new ExamNotFoundException(id));
+    }
+
+    public ExamEntity findExamForUpdate(Long id) {
+        return examRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new ExamNotFoundException(id));
     }
 
     public UserEntity currentUser(String email) {
@@ -121,6 +141,19 @@ public class ExamService {
     public void requireOwnerOrAdmin(ExamEntity exam, UserEntity user) {
         if (user.getRole() != Role.ADMIN && !exam.getCreatedBy().getId().equals(user.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền quản lý bài kiểm tra này");
+        }
+    }
+
+    public void requireAssignedStudent(ExamEntity exam, UserEntity student) {
+        if (student.getRole() != Role.STUDENT
+                || !examRecipientRepository.existsByExam_IdAndStudent_Id(
+                        exam.getId(),
+                        student.getId()
+                )) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Bạn không nằm trong danh sách học sinh nhận bài kiểm tra"
+            );
         }
     }
 
@@ -156,6 +189,13 @@ public class ExamService {
     }
 
     private void validateReadyToPublish(ExamEntity exam) {
+        if (!examRecipientRepository.existsByExam_Id(exam.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Phải chọn ít nhất một học sinh nhận bài trước khi xuất bản"
+            );
+        }
+
         List<QuestionEntity> questions = questionRepository.findByExamIdOrderById(exam.getId());
         if (questions.isEmpty()) {
             if (exam.getType() == ExamType.ESSAY
@@ -182,6 +222,23 @@ public class ExamService {
         if (questionTotal.compareTo(exam.getMaxScore()) != 0) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Tổng điểm các câu hỏi phải bằng điểm tối đa của bài kiểm tra");
+        }
+    }
+
+    private void validateStatusTransition(
+            ExamStatus currentStatus,
+            ExamStatus newStatus
+    ) {
+        boolean allowed = currentStatus == ExamStatus.DRAFT
+                && newStatus == ExamStatus.PUBLISHED
+                || currentStatus == ExamStatus.PUBLISHED
+                && newStatus == ExamStatus.CLOSED;
+
+        if (!allowed) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Trạng thái bài kiểm tra chỉ được chuyển từ DRAFT sang PUBLISHED rồi sang CLOSED"
+            );
         }
     }
 

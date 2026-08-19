@@ -1,12 +1,14 @@
 package com.ok.exam.student.controller;
 
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ok.dto.response.student.StudentExamScreenResponse;
+import com.ok.dto.response.student.StudentExamResultResponse;
 import com.ok.dto.response.student.SubmitStudentExamResponse;
 import com.ok.exam.student.service.StudentExamAttemptService;
 
@@ -37,6 +39,19 @@ public class StudentExamAttemptController {
             Authentication authentication
     ) {
         return studentExamAttemptService.submitAttempt(
+                examId,
+                attemptId,
+                authentication.getName()
+        );
+    }
+
+    @GetMapping("/{examId}/attempts/{attemptId}/result")
+    public StudentExamResultResponse getResult(
+            @PathVariable Long examId,
+            @PathVariable Long attemptId,
+            Authentication authentication
+    ) {
+        return studentExamAttemptService.getResult(
                 examId,
                 attemptId,
                 authentication.getName()

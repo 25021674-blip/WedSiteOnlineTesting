@@ -28,8 +28,8 @@ import lombok.NoArgsConstructor;
 @Table(
     name = "exam_attempts",
     uniqueConstraints = @UniqueConstraint(
-        name = "uk_attempt_exam_student",
-        columnNames = {"exam_id", "student_id"}
+        name = "uk_attempt_exam_student_number",
+        columnNames = {"exam_id", "student_id", "attempt_number"}
     )
 )
 public class ExamAttemptEntity {
@@ -48,6 +48,9 @@ public class ExamAttemptEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "student_id", nullable = false)
     private UserEntity student;
+
+    @Column(name = "attempt_number", nullable = false, updatable = false)
+    private Integer attemptNumber = 1;
 
     @Column(name = "started_at", nullable = false, updatable = false)
     private Instant startedAt;
@@ -71,7 +74,7 @@ public class ExamAttemptEntity {
     @Column(name = "screen_exit_count", nullable = false)
     private Integer screenExitCount = 0;
 
-    @Column(precision = 5, scale = 2)
+    @Column(precision = 10, scale = 2)
     private BigDecimal score;
 
     public ExamAttemptEntity(
@@ -79,8 +82,18 @@ public class ExamAttemptEntity {
             UserEntity student,
             Instant deadlineAt
     ) {
+        this(exam, student, 1, deadlineAt);
+    }
+
+    public ExamAttemptEntity(
+            ExamEntity exam,
+            UserEntity student,
+            Integer attemptNumber,
+            Instant deadlineAt
+    ) {
         this.exam = exam;
         this.student = student;
+        this.attemptNumber = Objects.requireNonNull(attemptNumber);
         this.startedAt = Instant.now();
         this.deadlineAt = deadlineAt;
         this.lastHeartbeatAt = Instant.now();
@@ -134,5 +147,9 @@ public class ExamAttemptEntity {
         this.status = ExamAttemptStatus.SUBMITTED;
         this.submittedAt = submissionTime;
         recordActivity(submissionTime);
+    }
+
+    public void assignScore(BigDecimal score) {
+        this.score = score;
     }
 }

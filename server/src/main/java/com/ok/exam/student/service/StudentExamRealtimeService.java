@@ -15,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.ExamAttemptStatus;
+import com.ok.domain.enums.ExamStatus;
+import com.ok.domain.enums.AttemptViolationType;
 import com.ok.domain.enums.Role;
 import com.ok.dto.request.student.RecordAttemptViolationRequest;
 import com.ok.dto.response.student.AttemptViolationResponse;
@@ -23,6 +25,7 @@ import com.ok.entity.AttemptViolationEntity;
 import com.ok.entity.ExamAttemptEntity;
 import com.ok.repository.AttemptViolationRepository;
 import com.ok.repository.StudentExamAttemptRepository;
+import com.ok.exam.service.ExamService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,6 +35,7 @@ public class StudentExamRealtimeService {
 
     private final StudentExamAttemptRepository attemptRepository;
     private final AttemptViolationRepository violationRepository;
+    private final ExamService examService;
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public StudentHeartbeatResponse recordHeartbeat(
@@ -84,6 +88,7 @@ public class StudentExamRealtimeService {
                 authenticatedEmail,
                 serverTime
         );
+        validateViolationPolicy(attempt, request.type());
 
         int screenExitCount = attempt.recordViolation(serverTime);
         AttemptViolationEntity violation =
@@ -147,6 +152,26 @@ public class StudentExamRealtimeService {
         }
     }
 
+    private void validateViolationPolicy(
+            ExamAttemptEntity attempt,
+            AttemptViolationType violationType
+    ) {
+        boolean enabled = switch (violationType) {
+            case FULLSCREEN_EXIT -> attempt.getExam()
+                    .isRequireFullscreen();
+            case TAB_HIDDEN, WINDOW_BLUR, PAGE_LEAVE -> attempt
+                    .getExam()
+                    .isTrackTabSwitches();
+        };
+
+        if (!enabled) {
+            throw new ResponseStatusException(
+                    CONFLICT,
+                    "Loại giám sát này chưa được bật cho bài kiểm tra"
+            );
+        }
+    }
+
     private ExamAttemptEntity findActiveOwnedAttempt(
             Long attemptId,
             String authenticatedEmail,
@@ -166,6 +191,19 @@ public class StudentExamRealtimeService {
             throw new ResponseStatusException(
                     FORBIDDEN,
                     "Chỉ học sinh được gửi dữ liệu thời gian thực"
+            );
+        }
+
+        examService.requireAssignedStudent(
+                attempt.getExam(),
+                attempt.getStudent()
+        );
+
+        if (attempt.getExam().getStatus() != ExamStatus.PUBLISHED) {
+            attempt.autoSubmit(serverTime);
+            throw new ResponseStatusException(
+                    GONE,
+                    "Bài kiểm tra đã đóng"
             );
         }
 

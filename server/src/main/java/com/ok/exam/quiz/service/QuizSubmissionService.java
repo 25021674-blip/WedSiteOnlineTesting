@@ -34,6 +34,8 @@ import com.ok.exam.service.ExamService;
 import com.ok.repository.QuestionRepository;
 import com.ok.repository.QuizSubmissionAnswerRepository;
 import com.ok.repository.QuizSubmissionRepository;
+import com.ok.repository.StudentExamAttemptRepository;
+import com.ok.repository.StudentUserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -44,26 +46,60 @@ public class QuizSubmissionService {
     private final QuizSubmissionAnswerRepository answerRepository;
     private final QuestionRepository questionRepository;
     private final ExamService examService;
+    private final StudentExamAttemptRepository studentExamAttemptRepository;
+    private final StudentUserRepository studentUserRepository;
 
     @Transactional
     public QuizAttemptResponse start(Long examId, String email) {
         ExamEntity exam = examService.findExam(examId);
-        UserEntity student = examService.currentUser(email);
+        UserEntity student = studentUserRepository
+                .findByEmailForUpdate(email)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Không tìm thấy tài khoản"
+                ));
         requireQuizCanStart(exam, student);
 
         QuizSubmissionEntity existing = submissionRepository
-                .findByExamIdAndStudentId(examId, student.getId()).orElse(null);
+                .findFirstByExamIdAndStudentIdOrderByAttemptNumberDesc(
+                        examId,
+                        student.getId()
+                ).orElse(null);
         if (existing != null) {
             finalizeIfExpired(existing, LocalDateTime.now());
-            return attemptResponse(existing);
+            if (existing.getStatus() == ExamAttemptStatus.IN_PROGRESS) {
+                return attemptResponse(existing);
+            }
+        }
+
+        long usedAttempts = submissionRepository
+                .countByExamIdAndStudentId(examId, student.getId());
+        if (usedAttempts >= exam.getMaxAttempts()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Bạn đã sử dụng hết số lần làm bài"
+            );
         }
 
         LocalDateTime startedAt = LocalDateTime.now();
-        LocalDateTime durationEnd = startedAt.plusMinutes(exam.getDurationMinutes());
-        LocalDateTime expiresAt = durationEnd.isBefore(exam.getDeadline())
-                ? durationEnd : exam.getDeadline();
+        LocalDateTime expiresAt = exam.getDeadline();
+        if (exam.isTimeLimitEnabled()) {
+            LocalDateTime durationEnd = startedAt.plusMinutes(
+                    exam.getDurationMinutes()
+            );
+            expiresAt = durationEnd.isBefore(exam.getDeadline())
+                    ? durationEnd
+                    : exam.getDeadline();
+        }
+
         QuizSubmissionEntity attempt = submissionRepository.save(
-                new QuizSubmissionEntity(exam, student, startedAt, expiresAt));
+                new QuizSubmissionEntity(
+                        exam,
+                        student,
+                        Math.toIntExact(usedAttempts + 1),
+                        startedAt,
+                        expiresAt
+                ));
         return attemptResponse(attempt);
     }
 
@@ -173,7 +209,8 @@ public class QuizSubmissionService {
 
     private void finalizeIfExpired(QuizSubmissionEntity attempt, LocalDateTime now) {
         if (attempt.getStatus() == ExamAttemptStatus.IN_PROGRESS
-                && !now.isBefore(attempt.getExpiresAt())) {
+                && (attempt.getExam().getStatus() != ExamStatus.PUBLISHED
+                || !now.isBefore(attempt.getExpiresAt()))) {
             finalizeAttempt(attempt, true, now);
         }
     }
@@ -191,15 +228,42 @@ public class QuizSubmissionService {
     }
 
     private QuizSubmissionEntity findAttempt(Long examId, Long studentId) {
-        return submissionRepository.findByExamIdAndStudentId(examId, studentId)
+        QuizSubmissionEntity attempt = submissionRepository
+                .findFirstByExamIdAndStudentIdOrderByAttemptNumberDesc(
+                        examId,
+                        studentId
+                )
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Bạn chưa bắt đầu bài trắc nghiệm này"));
+        examService.requireAssignedStudent(
+                attempt.getExam(),
+                attempt.getStudent()
+        );
+        return attempt;
     }
 
     private void requireQuizCanStart(ExamEntity exam, UserEntity student) {
         requireStudent(student);
+        examService.requireAssignedStudent(exam, student);
+        if (studentExamAttemptRepository.countByExam_IdAndStudent_Id(
+                exam.getId(),
+                student.getId()
+        ) > 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Bài kiểm tra đã được bắt đầu bằng luồng làm bài mới"
+            );
+        }
+        if (exam.isRequireFullscreen() || exam.isTrackTabSwitches()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Bài kiểm tra có giám sát phải dùng API làm bài mới"
+            );
+        }
         if (exam.getType() != ExamType.MULTIPLE_CHOICE) throw invalid("Đây không phải đề trắc nghiệm");
-        if (exam.getDurationMinutes() == null || exam.getDurationMinutes() <= 0) {
+        if (exam.isTimeLimitEnabled()
+                && (exam.getDurationMinutes() == null
+                || exam.getDurationMinutes() <= 0)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Đề chưa có thời lượng làm bài hợp lệ");
         }
         LocalDateTime now = LocalDateTime.now();
@@ -220,13 +284,15 @@ public class QuizSubmissionService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài làm đã kết thúc");
         }
         LocalDateTime now = LocalDateTime.now();
-        if (!now.isBefore(attempt.getExpiresAt())) {
+        if (attempt.getExam().getStatus() != ExamStatus.PUBLISHED
+                || !now.isBefore(attempt.getExpiresAt())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Bài làm đã hết thời gian");
         }
     }
 
     private QuizAttemptResponse attemptResponse(QuizSubmissionEntity attempt) {
-        return new QuizAttemptResponse(attempt.getId(), attempt.getExam().getId(), attempt.getStudent().getId(),
+        return new QuizAttemptResponse(attempt.getId(), attempt.getAttemptNumber(),
+                attempt.getExam().getId(), attempt.getStudent().getId(),
                 attempt.getStatus(), attempt.getStartedAt(), attempt.getExpiresAt(),
                 attempt.getSubmittedAt(), LocalDateTime.now());
     }
@@ -234,12 +300,51 @@ public class QuizSubmissionService {
     private QuizResultResponse resultResponse(QuizSubmissionEntity attempt) {
         List<QuizSubmissionAnswerEntity> answers =
                 answerRepository.findBySubmissionIdOrderById(attempt.getId());
-        return new QuizResultResponse(attempt.getId(), attempt.getExam().getId(), attempt.getStudent().getId(),
+        boolean scoreVisible = attempt.getExam().isShowScoreAfterSubmit();
+        boolean correctAnswersVisible = canRevealCorrectAnswers(attempt);
+        List<QuizAnswerResultResponse> answerResponses = answers.stream()
+                .map(answer -> new QuizAnswerResultResponse(
+                        answer.getQuestion().getId(),
+                        answer.getSelectedOption().getId(),
+                        correctAnswersVisible
+                                ? answer.getQuestion().getOptions()
+                                .stream()
+                                .filter(QuestionOptionEntity::isCorrect)
+                                .map(QuestionOptionEntity::getId)
+                                .findFirst()
+                                .orElse(null)
+                                : null,
+                        correctAnswersVisible
+                                ? answer.isCorrect()
+                                : null,
+                        scoreVisible && correctAnswersVisible
+                                ? answer.getAwardedPoints()
+                                : null
+                ))
+                .toList();
+
+        return new QuizResultResponse(attempt.getId(), attempt.getAttemptNumber(),
+                attempt.getExam().getId(), attempt.getStudent().getId(),
                 attempt.getStatus(), attempt.getStartedAt(), attempt.getExpiresAt(),
-                attempt.getScore(), attempt.getTotalPoints(), attempt.getSubmittedAt(),
-                answers.stream().map(answer -> new QuizAnswerResultResponse(answer.getQuestion().getId(),
-                        answer.getSelectedOption().getId(), answer.isCorrect(),
-                        answer.getAwardedPoints())).toList());
+                scoreVisible ? attempt.getScore() : null,
+                scoreVisible ? attempt.getTotalPoints() : null,
+                attempt.getSubmittedAt(), answerResponses);
+    }
+
+    private boolean canRevealCorrectAnswers(
+            QuizSubmissionEntity attempt
+    ) {
+        ExamEntity exam = attempt.getExam();
+        if (!exam.isShowCorrectAnswersAfterSubmit()) {
+            return false;
+        }
+
+        int attemptNumber = attempt.getAttemptNumber() == null
+                ? 1
+                : attempt.getAttemptNumber();
+        return attemptNumber >= exam.getMaxAttempts()
+                || exam.getStatus() == ExamStatus.CLOSED
+                || !LocalDateTime.now().isBefore(exam.getDeadline());
     }
 
     private ResponseStatusException invalid(String message) {

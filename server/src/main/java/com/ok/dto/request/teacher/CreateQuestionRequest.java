@@ -18,7 +18,7 @@ public record CreateQuestionRequest(
         QuestionType questionType,
 
         @NotBlank(message = "Nội dung câu hỏi không được để trống")
-        @Size(max = 2000, message = "Nội dung câu hỏi không được vượt quá 2000 ký tự")
+        @Size(max = 10000, message = "Nội dung câu hỏi không được vượt quá 10000 ký tự")
         String content,
 
         @NotNull(message = "Điểm của câu hỏi không được để trống")

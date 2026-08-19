@@ -4,6 +4,8 @@ public interface TeacherExamSubmissionView {
 
     Long getAttemptId();
 
+    Integer getAttemptNumber();
+
     Long getStudentId();
 
     String getStudentName();

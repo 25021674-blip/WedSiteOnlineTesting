@@ -8,6 +8,7 @@ import com.ok.domain.enums.QuestionType;
 
 public record TeacherStudentAttemptDetailResponse(
         Long attemptId,
+        Integer attemptNumber,
         String examTitle,
         Long studentId,
         String studentName,

@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.ExamAttemptStatus;
+import com.ok.domain.enums.ExamStatus;
 import com.ok.domain.enums.QuestionType;
 import com.ok.domain.enums.Role;
 import com.ok.dto.request.student.SaveStudentAnswerRequest;
@@ -27,6 +28,7 @@ import com.ok.entity.StudentAnswerEntity;
 import com.ok.repository.StudentAnswerRepository;
 import com.ok.repository.StudentExamAttemptRepository;
 import com.ok.repository.StudentQuestionRepository;
+import com.ok.exam.service.ExamService;
 
 import lombok.AllArgsConstructor;
 
@@ -37,6 +39,7 @@ public class StudentAnswerSaveService {
     private final StudentExamAttemptRepository attemptRepository;
     private final StudentQuestionRepository questionRepository;
     private final StudentAnswerRepository answerRepository;
+    private final ExamService examService;
 
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public SaveStudentAnswerResponse saveAnswer(
@@ -170,6 +173,19 @@ public class StudentAnswerSaveService {
             throw new ResponseStatusException(
                     FORBIDDEN,
                     "Chỉ học sinh được lưu đáp án"
+            );
+        }
+
+        examService.requireAssignedStudent(
+                attempt.getExam(),
+                attempt.getStudent()
+        );
+
+        if (attempt.getExam().getStatus() != ExamStatus.PUBLISHED) {
+            attempt.autoSubmit(serverTime);
+            throw new ResponseStatusException(
+                    GONE,
+                    "Bài kiểm tra đã đóng"
             );
         }
 

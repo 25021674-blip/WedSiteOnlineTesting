@@ -58,6 +58,24 @@ public class ExamEntity {
     @Column(name = "max_score", nullable = false, precision = 10, scale = 2)
     private BigDecimal maxScore;
 
+    @Column(name = "show_correct_answers_after_submit", nullable = false)
+    private boolean showCorrectAnswersAfterSubmit = false;
+
+    @Column(name = "show_score_after_submit", nullable = false)
+    private boolean showScoreAfterSubmit = false;
+
+    @Column(name = "max_attempts", nullable = false)
+    private int maxAttempts = 1;
+
+    @Column(name = "time_limit_enabled", nullable = false)
+    private boolean timeLimitEnabled = true;
+
+    @Column(name = "require_fullscreen", nullable = false)
+    private boolean requireFullscreen = false;
+
+    @Column(name = "track_tab_switches", nullable = false)
+    private boolean trackTabSwitches = false;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private ExamType type;
@@ -121,6 +139,22 @@ public class ExamEntity {
 
     public void changeStatus(ExamStatus newStatus){
         this.status=newStatus;
+    }
+
+    public void updateConfiguration(
+            boolean showCorrectAnswersAfterSubmit,
+            boolean showScoreAfterSubmit,
+            int maxAttempts,
+            boolean timeLimitEnabled,
+            boolean requireFullscreen,
+            boolean trackTabSwitches
+    ) {
+        this.showCorrectAnswersAfterSubmit = showCorrectAnswersAfterSubmit;
+        this.showScoreAfterSubmit = showScoreAfterSubmit;
+        this.maxAttempts = maxAttempts;
+        this.timeLimitEnabled = timeLimitEnabled;
+        this.requireFullscreen = requireFullscreen;
+        this.trackTabSwitches = trackTabSwitches;
     }
 
     @PrePersist

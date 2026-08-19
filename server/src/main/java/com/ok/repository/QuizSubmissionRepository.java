@@ -11,6 +11,12 @@ import com.ok.entity.QuizSubmissionEntity;
 public interface QuizSubmissionRepository extends JpaRepository<QuizSubmissionEntity, Long> {
     boolean existsByExamIdAndStudentId(Long examId, Long studentId);
     Optional<QuizSubmissionEntity> findByExamIdAndStudentId(Long examId, Long studentId);
+    Optional<QuizSubmissionEntity>
+            findFirstByExamIdAndStudentIdOrderByAttemptNumberDesc(
+                    Long examId,
+                    Long studentId
+            );
+    long countByExamIdAndStudentId(Long examId, Long studentId);
     List<QuizSubmissionEntity> findByStatusAndExpiresAtLessThanEqualOrderByExpiresAtAsc(
             ExamAttemptStatus status, LocalDateTime expiresAt, Pageable pageable);
 }

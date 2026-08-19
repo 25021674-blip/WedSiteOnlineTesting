@@ -97,6 +97,11 @@ public class StudentAnswerEntity {
         updateRevision(newClientRevision, newUpdatedAt);
     }
 
+    public void grade(BigDecimal score, Boolean correct) {
+        this.score = score;
+        this.correct = correct;
+    }
+
     private void updateRevision(
             Long newClientRevision,
             Instant newUpdatedAt

@@ -9,5 +9,11 @@ import com.ok.entity.EssaySubmissionEntity;
 public interface EssaySubmissionRepository extends JpaRepository<EssaySubmissionEntity, Long> {
     boolean existsByExamIdAndStudentId(Long examId, Long studentId);
     Optional<EssaySubmissionEntity> findByExamIdAndStudentId(Long examId, Long studentId);
+    Optional<EssaySubmissionEntity>
+            findFirstByExamIdAndStudentIdOrderByAttemptNumberDesc(
+                    Long examId,
+                    Long studentId
+            );
+    long countByExamIdAndStudentId(Long examId, Long studentId);
     List<EssaySubmissionEntity> findByExamIdOrderBySubmittedAtDesc(Long examId);
 }

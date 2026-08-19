@@ -5,14 +5,22 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.Role;
+import com.ok.domain.enums.ExamStatus;
+import com.ok.dto.request.teacher.UpdateExamConfigurationRequest;
+import com.ok.dto.response.teacher.ExamConfigurationResponse;
+import com.ok.dto.response.teacher.ExamConfigurationResponse.Recipient;
+import com.ok.dto.response.teacher.StudentRecipientCandidateResponse;
 import com.ok.dto.response.teacher.TeacherExamDetailResponse;
 import com.ok.dto.response.teacher.TeacherExamSubmissionResponse;
 import com.ok.dto.response.teacher.TeacherExamSummaryResponse;
@@ -21,15 +29,19 @@ import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponse.AnswerDet
 import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponse.OptionDetail;
 import com.ok.dto.response.teacher.TeacherStudentAttemptDetailResponse.QuestionDetail;
 import com.ok.entity.ExamAttemptEntity;
+import com.ok.entity.ExamEntity;
+import com.ok.entity.ExamRecipientEntity;
 import com.ok.entity.QuestionEntity;
 import com.ok.entity.QuestionOptionEntity;
 import com.ok.entity.StudentAnswerEntity;
 import com.ok.entity.UserEntity;
 import com.ok.repository.StudentAnswerRepository;
+import com.ok.repository.ExamRecipientRepositoryDemo;
 import com.ok.repository.StudentExamAttemptRepository;
 import com.ok.repository.StudentQuestionRepository;
 import com.ok.repository.TeacherExamRepository;
 import com.ok.repository.UserRepository;
+import com.ok.exam.service.ExamService;
 
 import lombok.AllArgsConstructor;
 
@@ -42,6 +54,114 @@ public class TeacherExamService {
     private final StudentExamAttemptRepository studentExamAttemptRepository;
     private final StudentQuestionRepository studentQuestionRepository;
     private final StudentAnswerRepository studentAnswerRepository;
+    private final ExamService examService;
+    private final ExamRecipientRepositoryDemo examRecipientRepository;
+
+    @Transactional(readOnly = true)
+    public ExamConfigurationResponse getConfiguration(
+            Long examId,
+            String authenticatedEmail
+    ) {
+        ExamEntity exam = findManagedExam(
+                examId,
+                authenticatedEmail
+        );
+        return createConfigurationResponse(exam);
+    }
+
+    @Transactional
+    public ExamConfigurationResponse updateConfiguration(
+            Long examId,
+            UpdateExamConfigurationRequest request,
+            String authenticatedEmail
+    ) {
+        ExamEntity exam = findManagedExamForUpdate(
+                examId,
+                authenticatedEmail
+        );
+        requireDraft(exam);
+
+        if (request == null || request.recipientStudentIds() == null) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Cấu hình bài kiểm tra không hợp lệ"
+            );
+        }
+
+        if (Boolean.TRUE.equals(request.timeLimitEnabled())
+                && (exam.getDurationMinutes() == null
+                    || exam.getDurationMinutes() <= 0)) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Bài kiểm tra phải có thời lượng hợp lệ khi bật giới hạn thời gian"
+            );
+        }
+
+        Set<Long> requestedStudentIds = new HashSet<>(
+                request.recipientStudentIds()
+        );
+        List<UserEntity> requestedStudents = userRepository
+                .findAllById(requestedStudentIds);
+
+        if (requestedStudents.size() != requestedStudentIds.size()) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Danh sách có mã học sinh không tồn tại"
+            );
+        }
+
+        boolean containsNonStudent = requestedStudents.stream()
+                .anyMatch(user -> user.getRole() != Role.STUDENT);
+        if (containsNonStudent) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Chỉ tài khoản học sinh mới được nhận bài kiểm tra"
+            );
+        }
+
+        exam.updateConfiguration(
+                request.showCorrectAnswersAfterSubmit(),
+                request.showScoreAfterSubmit(),
+                request.maxAttempts(),
+                request.timeLimitEnabled(),
+                request.requireFullscreen(),
+                request.trackTabSwitches()
+        );
+
+        replaceRecipients(exam, requestedStudents, requestedStudentIds);
+        return createConfigurationResponse(exam);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StudentRecipientCandidateResponse> getRecipientCandidates(
+            Long examId,
+            String query,
+            String authenticatedEmail
+    ) {
+        findManagedExam(examId, authenticatedEmail);
+
+        Set<Long> selectedStudentIds = examRecipientRepository
+                .findByExam_IdOrderByStudent_FullNameAscStudent_IdAsc(examId)
+                .stream()
+                .map(recipient -> recipient.getStudent().getId())
+                .collect(java.util.stream.Collectors.toSet());
+
+        String normalizedQuery = query == null
+                ? ""
+                : query.trim().toLowerCase(Locale.ROOT);
+
+        return userRepository
+                .findByRoleOrderByFullNameAscIdAsc(Role.STUDENT)
+                .stream()
+                .filter(student -> matchesQuery(student, normalizedQuery))
+                .map(student -> new StudentRecipientCandidateResponse(
+                        student.getId(),
+                        student.getFullName(),
+                        student.getEmail(),
+                        selectedStudentIds.contains(student.getId())
+                ))
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public List<TeacherExamSummaryResponse> getExamSummaries(
@@ -149,6 +269,7 @@ public class TeacherExamService {
                 .stream()
                 .map(submission -> new TeacherExamSubmissionResponse(
                         submission.getAttemptId(),
+                        submission.getAttemptNumber(),
                         submission.getStudentId(),
                         submission.getStudentName()
                 ))
@@ -213,6 +334,7 @@ public class TeacherExamService {
 
         return new TeacherStudentAttemptDetailResponse(
                 attempt.getId(),
+                attempt.getAttemptNumber(),
                 attempt.getExam().getTitle(),
                 attempt.getStudent().getId(),
                 attempt.getStudent().getFullName(),
@@ -273,5 +395,119 @@ public class TeacherExamService {
                 answer.getScore(),
                 answer.getCorrect()
         );
+    }
+
+    private ExamEntity findManagedExam(
+            Long examId,
+            String authenticatedEmail
+    ) {
+        ExamEntity exam = examService.findExam(examId);
+        UserEntity user = examService.currentUser(authenticatedEmail);
+        examService.requireOwnerOrAdmin(exam, user);
+        return exam;
+    }
+
+    private ExamEntity findManagedExamForUpdate(
+            Long examId,
+            String authenticatedEmail
+    ) {
+        ExamEntity exam = examService.findExamForUpdate(examId);
+        UserEntity user = examService.currentUser(authenticatedEmail);
+        examService.requireOwnerOrAdmin(exam, user);
+        return exam;
+    }
+
+    private void requireDraft(ExamEntity exam) {
+        if (exam.getStatus() != ExamStatus.DRAFT) {
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.CONFLICT,
+                    "Chỉ được thay đổi cấu hình khi bài kiểm tra còn là bản nháp"
+            );
+        }
+    }
+
+    private void replaceRecipients(
+            ExamEntity exam,
+            List<UserEntity> requestedStudents,
+            Set<Long> requestedStudentIds
+    ) {
+        List<ExamRecipientEntity> existingRecipients = examRecipientRepository
+                .findByExam_IdOrderByStudent_FullNameAscStudent_IdAsc(
+                        exam.getId()
+                );
+
+        List<ExamRecipientEntity> removedRecipients = existingRecipients
+                .stream()
+                .filter(recipient -> !requestedStudentIds.contains(
+                        recipient.getStudent().getId()
+                ))
+                .toList();
+
+        if (!removedRecipients.isEmpty()) {
+            examRecipientRepository.deleteAll(removedRecipients);
+            examRecipientRepository.flush();
+        }
+
+        Set<Long> existingStudentIds = existingRecipients
+                .stream()
+                .map(recipient -> recipient.getStudent().getId())
+                .collect(java.util.stream.Collectors.toSet());
+
+        List<ExamRecipientEntity> addedRecipients = requestedStudents
+                .stream()
+                .filter(student -> !existingStudentIds.contains(
+                        student.getId()
+                ))
+                .map(student -> new ExamRecipientEntity(exam, student))
+                .toList();
+
+        if (!addedRecipients.isEmpty()) {
+            examRecipientRepository.saveAllAndFlush(addedRecipients);
+        }
+    }
+
+    private ExamConfigurationResponse createConfigurationResponse(
+            ExamEntity exam
+    ) {
+        List<Recipient> recipients = examRecipientRepository
+                .findByExam_IdOrderByStudent_FullNameAscStudent_IdAsc(
+                        exam.getId()
+                )
+                .stream()
+                .map(recipient -> new Recipient(
+                        recipient.getStudent().getId(),
+                        recipient.getStudent().getFullName(),
+                        recipient.getStudent().getEmail(),
+                        recipient.getAssignedAt()
+                ))
+                .toList();
+
+        return new ExamConfigurationResponse(
+                exam.getId(),
+                exam.getStatus(),
+                exam.isShowCorrectAnswersAfterSubmit(),
+                exam.isShowScoreAfterSubmit(),
+                exam.getMaxAttempts(),
+                exam.isTimeLimitEnabled(),
+                exam.isRequireFullscreen(),
+                exam.isTrackTabSwitches(),
+                recipients
+        );
+    }
+
+    private boolean matchesQuery(
+            UserEntity student,
+            String normalizedQuery
+    ) {
+        if (normalizedQuery.isEmpty()) {
+            return true;
+        }
+
+        return student.getFullName()
+                .toLowerCase(Locale.ROOT)
+                .contains(normalizedQuery)
+                || student.getEmail()
+                .toLowerCase(Locale.ROOT)
+                .contains(normalizedQuery);
     }
 }

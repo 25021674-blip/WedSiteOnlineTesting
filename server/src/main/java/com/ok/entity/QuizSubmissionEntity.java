@@ -11,7 +11,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Entity
 @Table(name = "quiz_submissions", uniqueConstraints = @UniqueConstraint(
-        columnNames = {"exam_id", "student_id"}
+        name = "uk_quiz_submission_exam_student_number",
+        columnNames = {"exam_id", "student_id", "attempt_number"}
 ))
 public class QuizSubmissionEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,6 +25,9 @@ public class QuizSubmissionEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "student_id", nullable = false)
     private UserEntity student;
+
+    @Column(name = "attempt_number", nullable = false, updatable = false)
+    private Integer attemptNumber = 1;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -46,8 +50,19 @@ public class QuizSubmissionEntity {
 
     public QuizSubmissionEntity(ExamEntity exam, UserEntity student,
             LocalDateTime startedAt, LocalDateTime expiresAt) {
+        this(exam, student, 1, startedAt, expiresAt);
+    }
+
+    public QuizSubmissionEntity(
+            ExamEntity exam,
+            UserEntity student,
+            Integer attemptNumber,
+            LocalDateTime startedAt,
+            LocalDateTime expiresAt
+    ) {
         this.exam = exam;
         this.student = student;
+        this.attemptNumber = attemptNumber;
         this.status = ExamAttemptStatus.IN_PROGRESS;
         this.startedAt = startedAt;
         this.expiresAt = expiresAt;
