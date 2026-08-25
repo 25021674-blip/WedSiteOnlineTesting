@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#211d50">
+    <meta name="description" content="Trang chủ dành cho giáo viên của hệ thống Online Testing.">
+    <title>Trang chủ giáo viên | Online Testing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./TeacherHomeStyleDemo.css">
+</head>
+<body>
+    <main class="teacher-app" id="teacher-app">
+        <header class="app-header">
+            <a class="brand" href="#home" aria-label="Về trang chủ giáo viên">
+                <span class="brand-mark" aria-hidden="true">OT</span>
+                <span class="brand-copy">
+                    <strong>Online Testing</strong>
+                    <small>Không gian giáo viên</small>
+                </span>
+            </a>
+
+            <div class="header-actions">
+                <div class="teacher-identity" id="teacher-identity">
+                    <span class="avatar" id="teacher-avatar" aria-hidden="true">GV</span>
+                    <span class="identity-copy">
+                        <strong id="teacher-name">Giáo viên</strong>
+                        <small id="teacher-email">Chưa đăng nhập</small>
+                    </span>
+                </div>
+                <button class="logout-button" id="logout-button" type="button">
+                    <span data-icon="logout" aria-hidden="true"></span>
+                    <span id="logout-label">Đăng xuất</span>
+                </button>
+            </div>
+        </header>
+
+        <section class="scene" id="scene" aria-live="polite"></section>
+    </main>
+
+    <script src="./TeacherHomeScriptDemo.js" defer></script>
+</body>
+</html>

@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.ok.domain.enums.Role;
-import com.ok.dto.response.admin.AdminUserResponseDemo;
+import com.ok.dto.response.admin.AdminUserResponse;
 import com.ok.entity.UserEntity;
 import com.ok.repository.UserRepository;
 
@@ -21,12 +21,12 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class AdminUserServiceDemo {
+public class AdminUserService {
 
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
-    public List<AdminUserResponseDemo> getUsers(String adminEmail) {
+    public List<AdminUserResponse> getUsers(String adminEmail) {
         requireAdmin(adminEmail);
 
         return userRepository.findAllByOrderByFullNameAscIdAsc().stream()
@@ -84,8 +84,8 @@ public class AdminUserServiceDemo {
         return user;
     }
 
-    private AdminUserResponseDemo toResponse(UserEntity user) {
-        return new AdminUserResponseDemo(
+    private AdminUserResponse toResponse(UserEntity user) {
+        return new AdminUserResponse(
                 user.getId(),
                 user.getFullName(),
                 user.getEmail(),

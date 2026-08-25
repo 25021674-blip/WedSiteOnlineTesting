@@ -232,6 +232,11 @@
                 return;
             }
 
+            if (session.user.role === "TEACHER") {
+                window.location.assign("/teacher-home/TeacherHomeDemo.html");
+                return;
+            }
+
             showAuthenticatedSession(session, mode);
             storeSession(session);
             showAuthenticatedSession(session, mode);

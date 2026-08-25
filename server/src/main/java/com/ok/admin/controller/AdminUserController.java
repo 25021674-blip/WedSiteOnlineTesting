@@ -11,20 +11,20 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ok.admin.service.AdminUserServiceDemo;
-import com.ok.dto.response.admin.AdminUserResponseDemo;
+import com.ok.admin.service.AdminUserService;
+import com.ok.dto.response.admin.AdminUserResponse;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
-public class AdminUserControllerDemo {
+public class AdminUserController {
 
-    private final AdminUserServiceDemo adminUserService;
+    private final AdminUserService adminUserService;
 
     @GetMapping
-    public List<AdminUserResponseDemo> getUsers(Principal principal) {
+    public List<AdminUserResponse> getUsers(Principal principal) {
         return adminUserService.getUsers(principal.getName());
     }
 
