@@ -795,6 +795,55 @@ svg {
     margin-top: 2px;
 }
 
+.create-exam-scene {
+    display: grid;
+    gap: 28px;
+}
+
+.create-exam-scene__navigation {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.create-exam-card {
+    width: min(100%, 720px);
+    margin: 0 auto;
+}
+
+.create-exam-card__header {
+    margin-bottom: 28px;
+    text-align: center;
+}
+
+.create-exam-card__header .eyebrow {
+    margin-bottom: 7px;
+}
+
+.create-exam-card__header h1 {
+    margin: 0;
+    font-size: clamp(23px, 3vw, 31px);
+}
+
+.create-form--single {
+    grid-template-columns: 1fr;
+    width: min(100%, 520px);
+    margin: 0 auto;
+}
+
+.create-form--single .field,
+.create-form--single .form-actions {
+    grid-column: 1;
+}
+
+.create-form--single .form-actions {
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.create-form--single .form-actions .button {
+    min-width: 180px;
+}
+
 .success-card,
 .message-state,
 .empty-state {

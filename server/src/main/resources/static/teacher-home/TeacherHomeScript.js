@@ -4,6 +4,7 @@
     const API_BASE_URL = (window.TEACHER_HOME_CONFIG?.apiBaseUrl || "/api").replace(/\/+$/, "");
     const SESSION_STORAGE_KEY = "onlineTestingAuthSession";
     const REQUEST_TIMEOUT_MILLIS = 12000;
+    const VALID_ROUTES = ["home", "exams", "create-exam"];
     const DEMO_EXAM_SUMMARIES = [
         {
             examId: 1001,
@@ -93,17 +94,17 @@
     }
 
     function getRoute() {
-        return ["home", "exams"].includes(rawRoute()) ? rawRoute() : "home";
+        return VALID_ROUTES.includes(rawRoute()) ? rawRoute() : "home";
     }
 
     function normalizeRoute() {
-        if (!["home", "exams"].includes(rawRoute())) {
+        if (!VALID_ROUTES.includes(rawRoute())) {
             window.location.hash = "home";
         }
     }
 
     function navigate(route) {
-        if (!["home", "exams"].includes(route)) return;
+        if (!VALID_ROUTES.includes(route)) return;
         if (window.location.hash === `#${route}`) render();
         else window.location.hash = route;
     }
@@ -165,15 +166,65 @@
                         <span class="action-arrow">${icon("arrow")}</span>
                     </button>
 
-                    <button class="home-action home-action--create home-action--inactive" type="button" aria-disabled="true">
+                    <button class="home-action home-action--create" type="button" data-route="create-exam">
                         <span class="action-icon">${icon("create")}</span>
                         <span class="action-copy">
                             <strong>Tạo bài kiểm tra</strong>
-                            <small>Chức năng tạo bài kiểm tra sẽ được bổ sung sau.</small>
-                            <span class="action-meta">Tạm thời chưa xử lý</span>
+                            <small>Nhập thông tin để bắt đầu tạo một bài kiểm tra mới.</small>
                         </span>
+                        <span class="action-arrow">${icon("arrow")}</span>
                     </button>
                 </div>
+            </div>
+        `;
+    }
+
+    function createExamScene() {
+        return `
+            <div class="create-exam-scene">
+                <div class="create-exam-scene__navigation">
+                    <button class="button button--secondary" type="button" data-route="home">
+                        ${icon("back")} Trở về trang chủ
+                    </button>
+                </div>
+
+                <section class="create-card create-exam-card" aria-labelledby="create-exam-title">
+                    <header class="create-exam-card__header">
+                        <p class="eyebrow">Tạo bài kiểm tra</p>
+                        <h1 id="create-exam-title">Thông tin bài kiểm tra</h1>
+                    </header>
+
+                    <form class="create-form create-form--single" id="create-exam-form">
+                        <div class="field">
+                            <label for="create-title">Tên bài kiểm tra</label>
+                            <input id="create-title" name="title" type="text" maxlength="200" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="create-duration">Thời gian làm bài (phút)</label>
+                            <input id="create-duration" name="durationMinutes" type="number" min="1" step="1" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="create-start-time">Ngày mở</label>
+                            <input id="create-start-time" name="startTime" type="datetime-local" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="create-deadline">Ngày đóng</label>
+                            <input id="create-deadline" name="deadline" type="datetime-local" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="create-max-score">Điểm tối đa</label>
+                            <input id="create-max-score" name="maxScore" type="number" min="0.01" max="99999999.99" step="0.01" required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button class="button" type="button">Next ${icon("arrow")}</button>
+                        </div>
+                    </form>
+                </section>
             </div>
         `;
     }
@@ -227,10 +278,20 @@
 
     function render() {
         const route = getRoute();
-        document.title = route === "home"
-            ? "Trang chủ giáo viên | Online Testing"
-            : "Bài kiểm tra của học sinh | Online Testing";
-        scene.innerHTML = route === "exams" ? examsScene() : homeScene();
+        if (route === "exams") {
+            document.title = "Bài kiểm tra của học sinh | Online Testing";
+            scene.innerHTML = examsScene();
+            return;
+        }
+
+        if (route === "create-exam") {
+            document.title = "Tạo bài kiểm tra | Online Testing";
+            scene.innerHTML = createExamScene();
+            return;
+        }
+
+        document.title = "Trang chủ giáo viên | Online Testing";
+        scene.innerHTML = homeScene();
     }
 
     function bindEvents() {
