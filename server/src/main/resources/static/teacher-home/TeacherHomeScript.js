@@ -828,6 +828,15 @@
                 return;
             }
 
+            const publishButton = event.target.closest(".question-builder-footer .button");
+            if (publishButton) {
+                const configurationPage = new URL("./ExamConfigurationDemo.html", window.location.href);
+                const examId = questionBuilderExamId();
+                if (examId) configurationPage.searchParams.set("examId", examId);
+                window.location.assign(configurationPage.href);
+                return;
+            }
+
             const actionButton = event.target.closest("[data-action]");
             if (actionButton?.dataset.action === "reload") {
                 loadExamSummaries();
