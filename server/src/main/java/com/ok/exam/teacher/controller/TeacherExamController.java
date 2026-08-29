@@ -5,7 +5,7 @@ import java.util.List;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -41,13 +41,13 @@ public class TeacherExamController {
         );
     }
 
-    @PutMapping("/{examId}/configuration")
-    public ExamConfigurationResponse updateConfiguration(
+    @PostMapping("/{examId}/publish")
+    public ExamConfigurationResponse publishExam(
             @PathVariable Long examId,
             @Valid @RequestBody UpdateExamConfigurationRequest request,
             Authentication authentication
     ) {
-        return teacherExamService.updateConfiguration(
+        return teacherExamService.publishExam(
                 examId,
                 request,
                 authentication.getName()

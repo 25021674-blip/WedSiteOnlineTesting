@@ -39,7 +39,7 @@ Khi đọc một request đang chạy, đọc theo chiều ngược lại:
 
 6. `dto/CreateExamRequest.java`
 7. `dto/UpdateExamRequest.java`
-8. `dto/UpdateExamStatusRequest.java`
+8. `dto/request/teacher/UpdateExamConfigurationRequest.java`
 9. `dto/ExamResponse.java`
 10. `repository/ExamRepository.java`
 11. `exam/service/ExamService.java`
@@ -89,6 +89,7 @@ Khi đọc một request đang chạy, đọc theo chiều ngược lại:
 ## 4. Các URL chính
 
 - Quản lý đề: `/api/exams`
+- Lưu cấu hình và xuất bản nguyên tử: `POST /api/teacher/exams/{examId}/publish`
 - Quản lý câu hỏi: `/api/exams/{examId}/questions`
 - Học sinh xem đề trắc nghiệm: `/api/exams/{examId}/quiz`
 - Nộp trắc nghiệm: `/api/exams/{examId}/quiz-submissions`
@@ -105,5 +106,6 @@ API đăng ký hiện tạo tài khoản `STUDENT`. Muốn thử chức năng gi
 UPDATE users SET role = 'TEACHER' WHERE email = 'teacher@example.com';
 ```
 
-Đăng nhập lại sau khi đổi role để nhận JWT mới. Tạo đề xong phải đổi trạng thái sang
-`PUBLISHED` thì học sinh mới xem hoặc nộp được.
+Đăng nhập lại sau khi đổi role để nhận JWT mới. Tạo đề xong phải gọi API xuất bản
+nguyên tử để lưu cấu hình và chuyển trạng thái sang `PUBLISHED`; khi đó học sinh mới
+xem hoặc nộp được.

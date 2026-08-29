@@ -132,6 +132,21 @@ public class TeacherExamService {
         return createConfigurationResponse(exam);
     }
 
+    @Transactional
+    public ExamConfigurationResponse publishExam(
+            Long examId,
+            UpdateExamConfigurationRequest request,
+            String authenticatedEmail
+    ) {
+        updateConfiguration(examId, request, authenticatedEmail);
+        examService.changeStatus(
+                examId,
+                ExamStatus.PUBLISHED,
+                authenticatedEmail
+        );
+        return getConfiguration(examId, authenticatedEmail);
+    }
+
     @Transactional(readOnly = true)
     public List<StudentRecipientCandidateResponse> getRecipientCandidates(
             Long examId,

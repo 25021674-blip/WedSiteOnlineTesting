@@ -6,7 +6,6 @@ import java.util.List;
 import org.springframework.http.HttpStatus; //quy định mã HTTP trả về (201 khi tạo mới, 204 khi xóa).
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;  //@PathVariable: lấy giá trị từ URL (ví dụ /api/exams/{id}).
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -16,7 +15,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ok.dto.request.UpdateExamRequest;
-import com.ok.dto.request.UpdateExamStatusRequest;
 import com.ok.dto.request.teacher.CreateExamRequest;
 import com.ok.dto.response.ExamResponse;
 import com.ok.exam.service.ExamService;
@@ -52,13 +50,6 @@ public class ExamController {
                                @Valid @RequestBody UpdateExamRequest request,
                                Principal principal) {
         return examService.updateExam(id, request, principal.getName());
-    }
-
-    @PatchMapping("/{id}/status")
-    public ExamResponse changeStatus(@PathVariable Long id,
-                                     @Valid @RequestBody UpdateExamStatusRequest request,
-                                     Principal principal) {
-        return examService.changeStatus(id, request.status(), principal.getName());
     }
 
     @DeleteMapping("/{id}")

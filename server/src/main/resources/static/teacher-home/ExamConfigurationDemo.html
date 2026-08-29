@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tùy chỉnh bài kiểm tra</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./ExamConfigurationStyleDemo.css">
+    <script src="./ExamConfigurationScriptDemo.js" defer></script>
 </head>
 <body>
     <main>
@@ -14,11 +19,6 @@
                 <div>
                     <input id="show-correct-answers-after-submit" name="showCorrectAnswersAfterSubmit" type="checkbox">
                     <label for="show-correct-answers-after-submit">Hiển thị đáp án sau khi nộp</label>
-                </div>
-
-                <div>
-                    <input id="allow-retake" name="allowRetake" type="checkbox">
-                    <label for="allow-retake">Cho phép làm lại</label>
                 </div>
 
                 <div>
@@ -40,6 +40,40 @@
                     <input id="track-tab-switches" name="trackTabSwitches" type="checkbox">
                     <label for="track-tab-switches">Ghi lại số lần chuyển tab</label>
                 </div>
+
+                <div class="retake-setting">
+                    <span class="retake-setting__copy">
+                        <label for="retake-count">Số lần làm lại</label>
+                        <small id="retake-count-help">Nhập 0 nếu học sinh chỉ được làm bài một lần</small>
+                    </span>
+                    <input id="retake-count" name="retakeCount" type="number" min="0" step="1" value="0" inputmode="numeric" aria-describedby="retake-count-help">
+                </div>
+
+                <details class="recipient-selector">
+                    <summary>
+                        <span>Học sinh nhận bài kiểm tra</span>
+                        <small>Danh sách mẫu</small>
+                    </summary>
+
+                    <div class="recipient-list">
+                        <label class="recipient-option">
+                            <input name="recipientStudentIds" type="checkbox" value="demo-student-a">
+                            <span>Học sinh A</span>
+                        </label>
+                        <label class="recipient-option">
+                            <input name="recipientStudentIds" type="checkbox" value="demo-student-b">
+                            <span>Học sinh B</span>
+                        </label>
+                        <label class="recipient-option">
+                            <input name="recipientStudentIds" type="checkbox" value="demo-student-c">
+                            <span>Học sinh C</span>
+                        </label>
+                    </div>
+                </details>
+
+                <footer class="configuration-actions">
+                    <button class="publish-button" type="button" data-action="publish-exam">Xuất bản</button>
+                </footer>
             </fieldset>
         </form>
     </main>
