@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#17143d">
+    <meta name="description" content="Giao diện quản trị danh sách người dùng của hệ thống Online Testing.">
+    <title>Quản lý người dùng | Online Testing</title>
+    <link rel="stylesheet" href="./AdminUserManagementStyleDemo.css">
+    <script src="./AdminUserManagementScriptDemo.js"></script>
+</head>
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar" aria-label="Điều hướng quản trị">
+            <a class="brand" href="#main-content" aria-label="Online Testing - về nội dung chính">
+                <span class="brand__mark" aria-hidden="true">OT</span>
+                <span class="brand__copy">
+                    <strong>Online Testing</strong>
+                    <small>Không gian quản trị</small>
+                </span>
+            </a>
+
+            <div class="sidebar-footer">
+                <div class="admin-profile">
+                    <span class="avatar" aria-hidden="true">AD</span>
+                    <span class="admin-profile__copy">
+                        <strong>Quản trị viên</strong>
+                        <small>admin@onlinetesting.vn</small>
+                    </span>
+                </div>
+                <button class="logout-button" type="button">Đăng xuất</button>
+            </div>
+        </aside>
+
+        <div class="workspace">
+            <header class="topbar">
+                <div>
+                    <p class="eyebrow">Khu vực quản trị</p>
+                    <h1>Quản lý người dùng</h1>
+                </div>
+            </header>
+
+            <main class="main-content" id="main-content">
+                <section class="page-heading" aria-labelledby="page-heading-title">
+                    <div>
+                        <p class="eyebrow">Người dùng hệ thống</p>
+                        <h2 id="page-heading-title">Tất cả người dùng</h2>
+                    </div>
+                    <div class="role-summary" aria-label="Thống kê người dùng">
+                        <span><strong>—</strong> tài khoản</span>
+                        <span><strong>—</strong> vai trò</span>
+                    </div>
+                </section>
+
+                <section class="user-card" id="user-table" aria-labelledby="user-list-title">
+                    <header class="user-card__header">
+                        <div>
+                            <div class="title-row">
+                                <h2 id="user-list-title">Danh sách người dùng</h2>
+                            </div>
+                        </div>
+                    </header>
+
+                    <p id="user-action-status" class="user-action-status" role="status" aria-live="polite" aria-atomic="true" hidden></p>
+
+                    <div class="table-scroll" tabindex="0" aria-label="Bảng người dùng; trên một số màn hình có thể cuộn ngang">
+                        <table>
+                            <caption class="visually-hidden">Danh sách tất cả người dùng trong hệ thống</caption>
+                            <thead>
+                                <tr>
+                                    <th scope="col">Số thứ tự</th>
+                                    <th scope="col">ID người dùng</th>
+                                    <th scope="col">Tên người dùng</th>
+                                    <th scope="col">Email</th>
+                                    <th scope="col">Vai trò</th>
+                                    <th scope="col" class="action-heading">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="table-message-row">
+                                    <td class="table-message-cell" colspan="6">
+                                        <div class="table-message table-message--loading" role="status">Đang tải danh sách người dùng...</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <footer class="table-footer">
+                        <p aria-live="polite" aria-atomic="true">Đang cập nhật danh sách người dùng</p>
+                        <nav class="pagination" aria-label="Phân trang danh sách người dùng">
+                            <button type="button" aria-label="Trang trước" disabled>‹</button>
+                            <button class="is-current" type="button" aria-current="page">1</button>
+                            <button type="button" aria-label="Trang sau" disabled>›</button>
+                        </nav>
+                    </footer>
+                </section>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

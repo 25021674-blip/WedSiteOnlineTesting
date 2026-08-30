@@ -11,6 +11,7 @@
 
     const SESSION_STORAGE_KEY = "onlineTestingAuthSession";
     const REQUEST_TIMEOUT_MILLIS = 12000;
+    const ADMIN_HOME_URL = "/admin-home/AdminUserManagementDemo.html";
 
     const tabs = Array.from(document.querySelectorAll(".auth-tab[data-mode]"));
     const forms = {
@@ -60,6 +61,11 @@
 
         const storedSession = readStoredSession();
         if (storedSession) {
+            if (storedSession.user?.role === "ADMIN") {
+                window.location.replace(ADMIN_HOME_URL);
+                return;
+            }
+
             showAuthenticatedSession(storedSession, "stored");
             return;
         }
@@ -226,6 +232,11 @@
 
             const session = createSession(responseBody);
             storeSession(session);
+
+            if (session.user.role === "ADMIN") {
+                window.location.assign(ADMIN_HOME_URL);
+                return;
+            }
 
             if (session.user.role === "STUDENT") {
                 window.location.assign("/index.html#home");
