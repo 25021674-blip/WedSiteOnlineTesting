@@ -4,19 +4,7 @@
     const API_BASE_URL = (window.TEACHER_HOME_CONFIG?.apiBaseUrl || "/api").replace(/\/+$/, "");
     const SESSION_STORAGE_KEY = "onlineTestingAuthSession";
     const REQUEST_TIMEOUT_MILLIS = 12000;
-    const VALID_ROUTES = ["home", "exams", "create-exam", "create-questions"];
-    const DEMO_EXAM_SUMMARIES = [
-        {
-            examId: 1001,
-            title: "Kiểm tra Toán giữa kỳ",
-            completedStudentCount: 28
-        },
-        {
-            examId: 1002,
-            title: "Kiểm tra Ngữ văn chương 1",
-            completedStudentCount: 24
-        }
-    ];
+    const VALID_ROUTES = ["home", "exams", "exam-detail", "create-exam", "create-questions"];
 
     const icons = {
         arrow: `<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>`,
@@ -34,8 +22,14 @@
 
     const state = {
         session: readSession(),
-        summaries: [...DEMO_EXAM_SUMMARIES],
+        summaries: [],
         loading: false,
+        summaryError: "",
+        selectedExam: null,
+        examDetailId: null,
+        examDetailLoading: false,
+        examDetailError: "",
+        examDetailRequestId: 0,
         createFlow: createEmptyFlow()
     };
 
@@ -143,6 +137,22 @@
         else window.location.hash = route;
     }
 
+    function openExamDetail(examId) {
+        const normalizedExamId = String(examId || "");
+        if (!/^[1-9]\d*$/.test(normalizedExamId)) return;
+        const selectedExam = state.summaries.find(
+            exam => String(exam?.examId || "") === normalizedExamId
+        );
+
+        if (!selectedExam) return;
+        if (state.examDetailLoading && state.examDetailId === normalizedExamId) return;
+        state.selectedExam = { ...selectedExam };
+        state.examDetailId = normalizedExamId;
+        state.examDetailError = "";
+        navigate("exam-detail");
+        loadExamDetail(normalizedExamId);
+    }
+
     function questionBuilderExamId() {
         const query = window.location.hash.split("?")[1] || "";
         const examId = new URLSearchParams(query).get("examId") || "";
@@ -219,14 +229,52 @@
         return Array.isArray(payload) ? payload : [];
     }
 
+    async function fetchExamDetail(examId) {
+        const payload = await requestJson(
+            `/teacher/exams/${encodeURIComponent(examId)}`
+        );
+
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+            throw new Error("Server không trả về thông tin bài kiểm tra hợp lệ.");
+        }
+        if (String(payload.examId || "") !== String(examId)) {
+            throw new Error("Mã bài kiểm tra trong phản hồi không hợp lệ.");
+        }
+
+        return payload;
+    }
+
+    async function loadExamDetail(examId) {
+        const requestId = ++state.examDetailRequestId;
+        state.examDetailLoading = true;
+        state.examDetailError = "";
+        if (getRoute() === "exam-detail") render();
+
+        try {
+            const detail = await fetchExamDetail(examId);
+            if (requestId !== state.examDetailRequestId) return;
+            state.selectedExam = detail;
+        } catch (error) {
+            if (requestId !== state.examDetailRequestId) return;
+            state.examDetailError = error.message || "Không thể tải thông tin bài kiểm tra.";
+        } finally {
+            if (requestId === state.examDetailRequestId) {
+                state.examDetailLoading = false;
+                if (getRoute() === "exam-detail") render();
+            }
+        }
+    }
+
     async function loadExamSummaries() {
         state.loading = true;
+        state.summaryError = "";
         if (getRoute() === "exams") render();
         try {
             const summaries = await fetchExamSummaries();
-            state.summaries = summaries.length ? summaries : [...DEMO_EXAM_SUMMARIES];
-        } catch {
-            state.summaries = [...DEMO_EXAM_SUMMARIES];
+            state.summaries = summaries;
+        } catch (error) {
+            state.summaries = [];
+            state.summaryError = error.message || "Không thể tải danh sách bài kiểm tra.";
         } finally {
             state.loading = false;
             if (getRoute() === "exams") render();
@@ -758,17 +806,56 @@
 
     function examCard(exam) {
         return `
-            <article class="teacher-exam-card">
-                <span class="teacher-exam-card__icon">${icon("exam")}</span>
-                <div class="teacher-exam-card__content">
-                    <h2>${escapeHtml(exam.title || "Bài kiểm tra chưa có tên")}</h2>
-                </div>
-                <div class="teacher-exam-card__completed">
+            <button
+                class="teacher-exam-card teacher-exam-card--interactive"
+                type="button"
+                data-action="open-exam-detail"
+                data-exam-id="${escapeHtml(exam.examId)}">
+                <span class="teacher-exam-card__icon" aria-hidden="true">${icon("exam")}</span>
+                <span class="teacher-exam-card__content">
+                    <strong class="teacher-exam-card__title">${escapeHtml(exam.title || "Bài kiểm tra chưa có tên")}</strong>
+                </span>
+                <span class="teacher-exam-card__completed">
                     <strong>${Number(exam.completedStudentCount || 0)}</strong>
                     <span>Số học sinh đã hoàn thành</span>
-                </div>
-            </article>
+                </span>
+            </button>
         `;
+    }
+
+    function examGridContent() {
+        if (state.loading) {
+            return `
+                <div class="skeleton" aria-hidden="true"></div>
+                <div class="skeleton" aria-hidden="true"></div>
+            `;
+        }
+
+        if (state.summaryError) {
+            return `
+                <section class="message-state teacher-exam-grid__message" role="alert">
+                    <h2>Không thể tải danh sách bài kiểm tra</h2>
+                    <p>${escapeHtml(state.summaryError)}</p>
+                    <div class="message-actions">
+                        <button class="button" type="button" data-action="reload">
+                            ${icon("refresh")} Thử lại
+                        </button>
+                    </div>
+                </section>
+            `;
+        }
+
+        if (!state.summaries.length) {
+            return `
+                <section class="empty-state teacher-exam-grid__message">
+                    <span class="empty-icon" aria-hidden="true">${icon("exam")}</span>
+                    <h3>Chưa có bài kiểm tra</h3>
+                    <p>Các bài kiểm tra do bạn tạo sẽ xuất hiện tại đây.</p>
+                </section>
+            `;
+        }
+
+        return state.summaries.map(examCard).join("");
     }
 
     function examsScene() {
@@ -782,9 +869,172 @@
                     </div>
                 </div>
                 <div class="teacher-exam-grid">
-                    ${state.summaries.map(examCard).join("")}
+                    ${examGridContent()}
                 </div>
             </section>
+        `;
+    }
+
+    function examDetailToolbar() {
+        return `
+            <header class="page-toolbar">
+                <div class="toolbar-actions">
+                    <button class="button button--secondary" type="button" data-route="exams">
+                        ${icon("back")} Danh sách bài kiểm tra
+                    </button>
+                </div>
+                <div class="page-heading">
+                    <p class="eyebrow">Bài kiểm tra của học sinh</p>
+                    <h1>Thông tin bài kiểm tra</h1>
+                </div>
+            </header>
+        `;
+    }
+
+    function formatExamDateTime(value) {
+        if (!value) return null;
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return null;
+
+        const datePart = new Intl.DateTimeFormat("vi-VN", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            timeZone: "Asia/Ho_Chi_Minh"
+        }).format(date);
+        const timePart = new Intl.DateTimeFormat("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hourCycle: "h23",
+            timeZone: "Asia/Ho_Chi_Minh"
+        }).format(date);
+
+        return `${datePart} ${timePart}`;
+    }
+
+    function formatExamDuration(value) {
+        if (value == null || value === "") return null;
+        const minutes = Number(value);
+        if (!Number.isFinite(minutes) || minutes < 0) return null;
+        return `${new Intl.NumberFormat("vi-VN").format(minutes)} phút`;
+    }
+
+    function formatExamScore(value) {
+        if (value == null || value === "") return null;
+        const score = Number(value);
+        if (!Number.isFinite(score) || score < 0) return null;
+
+        return `${new Intl.NumberFormat("vi-VN", {
+            maximumFractionDigits: 2
+        }).format(score)} điểm`;
+    }
+
+    function detailValueMarkup(value) {
+        if (value == null || value === "") {
+            return '<span class="exam-detail-placeholder">Chưa cập nhật</span>';
+        }
+        return escapeHtml(value);
+    }
+
+    function examDetailScene() {
+        const toolbar = examDetailToolbar();
+
+        if (state.examDetailLoading) {
+            return `
+                <div class="exam-detail-scene">
+                    ${toolbar}
+                    <section class="exam-detail-card message-state" role="status" aria-busy="true">
+                        <h2>Đang tải thông tin bài kiểm tra...</h2>
+                        <p>Vui lòng chờ trong giây lát.</p>
+                    </section>
+                </div>
+            `;
+        }
+
+        if (state.examDetailError) {
+            return `
+                <div class="exam-detail-scene">
+                    ${toolbar}
+                    <section class="exam-detail-card message-state" role="alert">
+                        <h2>Không thể tải thông tin bài kiểm tra</h2>
+                        <p>${escapeHtml(state.examDetailError)}</p>
+                        <div class="message-actions">
+                            <button class="button" type="button" data-action="retry-exam-detail">
+                                ${icon("refresh")} Thử lại
+                            </button>
+                        </div>
+                    </section>
+                </div>
+            `;
+        }
+
+        if (!state.selectedExam) {
+            return `
+                <div class="exam-detail-scene">
+                    ${toolbar}
+                    <section class="exam-detail-card message-state">
+                        <h2>Chưa chọn bài kiểm tra</h2>
+                        <p>Hãy quay lại danh sách và chọn một bài kiểm tra để xem thông tin.</p>
+                    </section>
+                </div>
+            `;
+        }
+
+        const exam = state.selectedExam;
+        const title = exam.title || "Tên bài kiểm tra";
+        const completedStudentCount = Number.isFinite(Number(exam.completedStudentCount))
+            ? Number(exam.completedStudentCount)
+            : 0;
+        const createdAt = formatExamDateTime(exam.createdAt);
+        const expiresAt = formatExamDateTime(exam.expiresAt);
+        const duration = formatExamDuration(exam.durationMinutes);
+        const maxScore = formatExamScore(exam.maxScore);
+
+        return `
+            <div class="exam-detail-scene">
+                ${toolbar}
+
+                <article class="exam-detail-card" aria-labelledby="exam-detail-title">
+                    <header class="exam-detail-card__header">
+                        <span class="exam-detail-card__icon" aria-hidden="true">${icon("exam")}</span>
+                        <div>
+                            <p class="eyebrow">Chi tiết bài kiểm tra</p>
+                            <h2 id="exam-detail-title">${escapeHtml(title)}</h2>
+                        </div>
+                    </header>
+
+                    <dl class="exam-detail-facts">
+                        <div class="exam-detail-fact">
+                            <dt>Tên bài kiểm tra</dt>
+                            <dd>${escapeHtml(title)}</dd>
+                        </div>
+                        <div class="exam-detail-fact exam-detail-fact--highlight">
+                            <dt>Số học sinh hoàn thành</dt>
+                            <dd>${completedStudentCount}</dd>
+                        </div>
+                        <div class="exam-detail-fact">
+                            <dt>Ngày tạo</dt>
+                            <dd>${detailValueMarkup(createdAt)}</dd>
+                        </div>
+                        <div class="exam-detail-fact">
+                            <dt>Ngày, giờ hết hạn</dt>
+                            <dd>${detailValueMarkup(expiresAt)}</dd>
+                        </div>
+                        <div class="exam-detail-fact">
+                            <dt>Thời gian làm bài</dt>
+                            <dd>${detailValueMarkup(duration)}</dd>
+                        </div>
+                        <div class="exam-detail-fact">
+                            <dt>Điểm tối đa</dt>
+                            <dd>${detailValueMarkup(maxScore)}</dd>
+                        </div>
+                    </dl>
+
+                    <footer class="exam-detail-card__actions">
+                        <button class="button" type="button">Xem bài làm của học sinh</button>
+                    </footer>
+                </article>
+            </div>
         `;
     }
 
@@ -793,6 +1043,12 @@
         if (route === "exams") {
             document.title = "Bài kiểm tra của học sinh | Online Testing";
             scene.innerHTML = examsScene();
+            return;
+        }
+
+        if (route === "exam-detail") {
+            document.title = "Thông tin bài kiểm tra | Online Testing";
+            scene.innerHTML = examDetailScene();
             return;
         }
 
@@ -838,6 +1094,14 @@
             }
 
             const actionButton = event.target.closest("[data-action]");
+            if (actionButton?.dataset.action === "open-exam-detail") {
+                openExamDetail(actionButton.dataset.examId);
+                return;
+            }
+            if (actionButton?.dataset.action === "retry-exam-detail") {
+                if (state.examDetailId) loadExamDetail(state.examDetailId);
+                return;
+            }
             if (actionButton?.dataset.action === "reload") {
                 loadExamSummaries();
                 return;

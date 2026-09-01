@@ -645,6 +645,20 @@ svg {
     box-shadow: 0 15px 30px rgb(39 34 91 / 10%);
 }
 
+.teacher-exam-card--interactive {
+    width: 100%;
+    appearance: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.teacher-exam-card--interactive:focus-visible {
+    outline: 3px solid rgb(81 70 197 / 24%);
+    outline-offset: 3px;
+}
+
 .teacher-exam-card__icon {
     display: grid;
     width: 43px;
@@ -656,6 +670,7 @@ svg {
 }
 
 .teacher-exam-card__content {
+    display: block;
     margin: 19px 0 23px;
 }
 
@@ -666,7 +681,9 @@ svg {
     font-size: 9px;
 }
 
-.teacher-exam-card__content h2 {
+.teacher-exam-card__content h2,
+.teacher-exam-card__title {
+    display: block;
     margin: 0;
     overflow-wrap: anywhere;
     font-size: 16px;
@@ -698,6 +715,108 @@ svg {
 .teacher-exam-grid .skeleton {
     min-height: 225px;
     border-radius: 19px;
+}
+
+.teacher-exam-grid__message {
+    grid-column: 1 / -1;
+}
+
+.exam-detail-card {
+    width: min(760px, 100%);
+    margin: 0 auto;
+    padding: clamp(22px, 4vw, 36px);
+    border: 1px solid #dcdde8;
+    border-radius: 24px;
+    background:
+        radial-gradient(circle at 100% 0, rgb(101 89 220 / 8%), transparent 13rem),
+        #fff;
+    box-shadow: 0 12px 32px rgb(39 34 91 / 7%);
+}
+
+.exam-detail-card__header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid #ececf3;
+}
+
+.exam-detail-card__icon {
+    display: grid;
+    width: 52px;
+    height: 52px;
+    place-items: center;
+    border-radius: 15px;
+    color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.exam-detail-card__icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.exam-detail-card__header .eyebrow {
+    margin-bottom: 6px;
+}
+
+.exam-detail-card__header h2 {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-size: clamp(20px, 3vw, 28px);
+    line-height: 1.4;
+    letter-spacing: -.025em;
+}
+
+.exam-detail-facts {
+    display: grid;
+    margin: 22px 0 0;
+}
+
+.exam-detail-fact {
+    display: grid;
+    grid-template-columns: minmax(170px, .8fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 18px;
+    padding: 15px 0;
+    border-bottom: 1px solid #eff0f5;
+}
+
+.exam-detail-fact dt {
+    color: var(--muted);
+    font-size: 10px;
+    line-height: 1.55;
+}
+
+.exam-detail-fact dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+    color: var(--ink);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.55;
+}
+
+.exam-detail-fact--highlight dd {
+    color: var(--primary);
+    font-size: 25px;
+    letter-spacing: -.04em;
+}
+
+.exam-detail-placeholder {
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.exam-detail-card__actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 24px;
+}
+
+.exam-detail-card__actions .button {
+    min-width: 220px;
 }
 
 .status-badge {
@@ -1396,6 +1515,32 @@ svg {
     .teacher-exam-card {
         min-height: 205px;
         padding: 19px;
+    }
+
+    .exam-detail-card {
+        padding: 19px;
+        border-radius: 19px;
+    }
+
+    .exam-detail-card__header {
+        align-items: flex-start;
+    }
+
+    .exam-detail-card__icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 13px;
+    }
+
+    .exam-detail-fact {
+        grid-template-columns: 1fr;
+        gap: 5px;
+        padding: 13px 0;
+    }
+
+    .exam-detail-card__actions .button {
+        width: 100%;
+        min-width: 0;
     }
 
     .exam-row,
