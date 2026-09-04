@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Objects;
 
+import com.ok.domain.enums.ExamCreationStep;
 import com.ok.domain.enums.ExamStatus;
 import com.ok.domain.enums.ExamType;
 
@@ -19,6 +21,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -45,6 +48,9 @@ public class ExamEntity {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
 
     @Column(name = "start_at", nullable = false)
     private Instant startAt;
@@ -83,6 +89,10 @@ public class ExamEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ExamStatus status = ExamStatus.DRAFT;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "creation_step", nullable = false, length = 30)
+    private ExamCreationStep creationStep = ExamCreationStep.QUESTIONS;
 
     public ExamEntity(
             UserEntity teacher,
@@ -141,6 +151,14 @@ public class ExamEntity {
         this.status=newStatus;
     }
 
+    public void changeCreationStep(ExamCreationStep newStep) {
+        this.creationStep = Objects.requireNonNull(newStep);
+    }
+
+    public void touch() {
+        this.updatedAt = Instant.now();
+    }
+
     public void updateConfiguration(
             boolean showCorrectAnswersAfterSubmit,
             boolean showScoreAfterSubmit,
@@ -158,9 +176,18 @@ public class ExamEntity {
     }
 
     @PrePersist
-    private void setCreatedAt() {
+    private void initializeTimestamps() {
+        Instant now = Instant.now();
         if (createdAt == null) {
-            createdAt = Instant.now();
+            createdAt = now;
         }
+        if (updatedAt == null) {
+            updatedAt = now;
+        }
+    }
+
+    @PreUpdate
+    private void updateTimestamp() {
+        updatedAt = Instant.now();
     }
 }
