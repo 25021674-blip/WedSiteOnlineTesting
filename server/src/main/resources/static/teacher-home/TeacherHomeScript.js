@@ -3,6 +3,7 @@
 
     const API_BASE_URL = (window.TEACHER_HOME_CONFIG?.apiBaseUrl || "/api").replace(/\/+$/, "");
     const SESSION_STORAGE_KEY = "onlineTestingAuthSession";
+    const AUTH_PAGE_URL = "/auth/Auth.html";
     const REQUEST_TIMEOUT_MILLIS = 12000;
     const VALID_ROUTES = ["home", "exams", "exam-detail", "create-exam", "create-questions"];
 
@@ -97,6 +98,16 @@
         } catch {
             return null;
         }
+    }
+
+    function logout() {
+        try {
+            sessionStorage.removeItem(SESSION_STORAGE_KEY);
+        } catch {
+            // Continue to the login page if browser storage is unavailable.
+        }
+        state.session = null;
+        window.location.replace(AUTH_PAGE_URL);
     }
 
     function currentUser() {
@@ -1069,6 +1080,8 @@
     }
 
     function bindEvents() {
+        document.querySelector("#logout-button")?.addEventListener("click", logout);
+
         window.addEventListener("hashchange", () => {
             normalizeRoute();
             render();
